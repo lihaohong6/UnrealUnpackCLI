@@ -1,0 +1,8 @@
+﻿.idea/
+.vscode/
+CNExport/
+audio/
+bin/
+obj/
+AutoUnpack.sln
+AutoUnpack.csproj.DotSettings
