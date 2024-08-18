@@ -1,4 +1,5 @@
-﻿using CUE4Parse.Encryption.Aes;
+﻿using CUE4Parse_Conversion.Textures;
+using CUE4Parse.Encryption.Aes;
 using CUE4Parse.FileProvider;
 using CUE4Parse.UE4.Assets.Exports.Sound;
 using CUE4Parse.UE4.Assets.Exports.Texture;
@@ -41,19 +42,19 @@ public static class Program {
                 var obj = provider.LoadObject(path);
                 switch (obj) {
                     case UTexture2D texture: {
-                        // var fullDirectory = exportRoot +
-                        //                     path.Replace("PM/Content/PaperMan/UI/Atlas/DynamicResource", "") +
-                        //                     ".png";
-                        // Directory.GetParent(fullDirectory)?.Create();
-                        // if (CheckFile(fullDirectory)) {
-                        //     continue;
-                        // }
-                        //
-                        // var bitmap = texture.Decode(ETexturePlatform.DesktopMobile)?.Encode(SKEncodedImageFormat.Png, 100);
-                        // using (var fileStream = new FileStream(fullDirectory, FileMode.Create)) {
-                        //     bitmap?.SaveTo(fileStream);
-                        // }
-                        //
+                        var fullDirectory = exportRoot +
+                                            path.Replace("PM/Content/PaperMan/UI/Atlas/DynamicResource", "") +
+                                            ".png";
+                        Directory.GetParent(fullDirectory)?.Create();
+                        if (CheckFile(fullDirectory)) {
+                            continue;
+                        }
+                        
+                        var bitmap = texture.Decode()?.Encode(SKEncodedImageFormat.Png, 100);
+                        using (var fileStream = new FileStream(fullDirectory, FileMode.Create)) {
+                            bitmap?.SaveTo(fileStream);
+                        }
+                        
                         break;
                     }
                 }
@@ -81,7 +82,7 @@ public static class Program {
 
     private static DefaultFileProvider GetProvider(string providerRoot) {
         var provider = new DefaultFileProvider(providerRoot, SearchOption.AllDirectories,
-            false, new VersionContainer(EGame.GAME_UE4_28));
+            false, new VersionContainer(EGame.GAME_UE4_25));
         provider.Initialize(); // will scan the archive directory for supported file extensions
         provider.SubmitKey(new FGuid(), new FAesKey(AesKey));
         provider.Mount();
@@ -108,30 +109,25 @@ public static class Program {
         var provider = GetProvider(providerRoot);
         List<string> keys = [];
         keys.AddRange(provider.Files.Keys.Where(
-            key => key.Contains("PM/Content/PaperMan") && !key.Contains("PaperMan/Maps") &&
-                   !key.Contains("PaperMan/SkinAssets") &&
-                   !key.Contains("/Cinematics/")
+            key => key.Contains("PM/Content/PaperMan") 
+                   // && !key.Contains("PaperMan/Maps") &&
+                   // !key.Contains("PaperMan/SkinAssets") &&
+                   // !key.Contains("/Cinematics/")
         ));
+        // keys.AddRange(provider.Files.Keys.Where(key => !key.Contains("PM/Content/PaperMan")));
         keys.Sort();
-        provider.Dispose();
         Console.WriteLine("{0} total", keys.Count);
-        var i = 67598; // 3524 causes a crash
+        var i = 3524; // 3524 causes a crash
         while (i < keys.Count) {
-            provider = GetProvider(providerRoot);
-            while (i < keys.Count) {
-                // Console.WriteLine(i);
-                // Console.WriteLine(keys[i]);
-                var f = keys[i];
-                var path = f.Split(".")[0];
-                ProcessJson("allJson", provider, path, "DO_NOT_TRUNCATE");
-                i++;
-                if (i % 1000 == 999) {
-                    break;
-                }
+            // Console.WriteLine(i);
+            // Console.WriteLine(keys[i]);
+            var f = keys[i];
+            var path = f.Split(".")[0];
+            ProcessJson("allJson/", provider, path, "DO_NOT_TRUNCATE");
+            i++;
+            if (i % 1000 == 0) {
+                Console.WriteLine("{0} out of {1}", i, keys.Count);
             }
-
-            Console.WriteLine("{0} out of {1}", i, keys.Count);
-            provider.Dispose();
         }
     }
 
