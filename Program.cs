@@ -1,8 +1,11 @@
-﻿using CUE4Parse_Conversion.Textures;
+﻿using System.Diagnostics;
+using CommandLine;
+using CUE4Parse_Conversion.Textures;
 using CUE4Parse.Encryption.Aes;
 using CUE4Parse.FileProvider;
 using CUE4Parse.UE4.Assets.Exports.Sound;
 using CUE4Parse.UE4.Assets.Exports.Texture;
+using CUE4Parse.UE4.Localization;
 using CUE4Parse.UE4.Objects.Core.Misc;
 using CUE4Parse.UE4.Versions;
 using Newtonsoft.Json;
@@ -15,16 +18,16 @@ public static class Program {
     private static void DumpChineseData(string providerRoot, string exportRoot, string csvRoot) {
         var provider = GetProvider(providerRoot);
         foreach (var f in provider.Files.Keys) {
-            var path = f.Split(".")[0];
             List<string> dynamicResources = [
                 "PM/Content/PaperMan/UI/Atlas/DynamicResource/Item/ItemIcon",
                 "PM/Content/PaperMan/UI/Atlas/DynamicResource/Emote"
             ];
             if (f.Contains("PM/Content/PaperMan/CSV")) {
-                ProcessJson(csvRoot, provider, path, "PM/Content/PaperMan");
+                ProcessJson(csvRoot, provider, f, "PM/Content/PaperMan");
             }
             else if (f.Contains("PM/Content/WwiseAssets/AkEvent")) {
-                ProcessJson(exportRoot, provider, path, "PM/Content");
+                ProcessJson(exportRoot, provider, f, "PM/Content");
+                ProcessJson(csvRoot, provider, f, "PM/Content");
             }
             else if (f.Contains("PM/Content/WwiseAudio")) {
                 var fullDirectory = exportRoot + f.Replace("PM/Content", "");
@@ -38,26 +41,32 @@ public static class Program {
                     fileStream.Write(obj);
                 }
             }
-            else if (dynamicResources.Any(s => path.Contains(s))) {
-                var obj = provider.LoadObject(path);
-                switch (obj) {
-                    case UTexture2D texture: {
-                        var fullDirectory = exportRoot +
-                                            path.Replace("PM/Content/PaperMan/UI/Atlas/DynamicResource", "") +
-                                            ".png";
-                        Directory.GetParent(fullDirectory)?.Create();
-                        if (CheckFile(fullDirectory)) {
-                            continue;
-                        }
-                        
-                        var bitmap = texture.Decode()?.Encode(SKEncodedImageFormat.Png, 100);
-                        using (var fileStream = new FileStream(fullDirectory, FileMode.Create)) {
-                            bitmap?.SaveTo(fileStream);
-                        }
-                        
-                        break;
-                    }
+            else if (dynamicResources.Any(s => f.Contains(s))) {
+                ProcessPng(exportRoot, provider, f, "PM/Content/PaperMan/UI/Atlas/DynamicResource");
+            }
+        }
+    }
+
+    private static void ProcessPng(string exportRoot, DefaultFileProvider provider, string f, string truncate,
+        bool force = false) {
+        var path = f.Split(".")[0];
+        var obj = provider.LoadObject(path);
+        switch (obj) {
+            case UTexture2D texture: {
+                var filePath = path.Replace(truncate, "") + ".png";
+                var fullDirectory = exportRoot + filePath;
+                Directory.GetParent(fullDirectory)?.Create();
+                if (!force && CheckFile(fullDirectory)) {
+                    return;
                 }
+
+                var bitmap = texture.Decode()?.Encode(SKEncodedImageFormat.Png, 100);
+                using (var fileStream = new FileStream(fullDirectory, FileMode.Create)) {
+                    bitmap?.SaveTo(fileStream);
+                }
+
+                Console.WriteLine(filePath + " exported");
+                break;
             }
         }
     }
@@ -70,12 +79,11 @@ public static class Program {
     private static void DumpGlobalData(string providerRoot, string exportRoot, string jsonRoot) {
         var provider = GetProvider(providerRoot);
         foreach (var f in provider.Files.Keys) {
-            var path = f.Split(".")[0];
             if (f.Contains("PM/Content/PaperMan/CSV")) {
-                ProcessJson(jsonRoot, provider, path, "PM/Content/PaperMan");
+                ProcessJson(jsonRoot, provider, f, "PM/Content/PaperMan");
             }
             else if (f.Contains("PM/Content/Localization/Game")) {
-                ProcessJson(jsonRoot, provider, path, "PM/Content/Localization");
+                ProcessJson(jsonRoot, provider, f, "PM/Content");
             }
         }
     }
@@ -89,30 +97,49 @@ public static class Program {
         return provider;
     }
 
-    private static void ProcessJson(string csvRoot, DefaultFileProvider provider, string path, string truncate) {
-        try {
-            var allObjects = provider.LoadObject(path);
-            var fullDirectory = csvRoot + path.Replace(truncate, "") + ".json";
-            var fullJson = JsonConvert.SerializeObject(allObjects, Formatting.Indented);
-            if (CheckFile(fullDirectory) && File.ReadAllText(fullDirectory) == fullJson) {
+    private static void ProcessJson(string csvRoot, DefaultFileProvider provider, string path, string truncate, bool force = false) {
+        string fullJson;
+        if (path.EndsWith(".uasset") || path.EndsWith(".uexp")) {
+            try {
+                var allObjects = provider.LoadObject(path.Split(".")[0]);
+                fullJson = JsonConvert.SerializeObject(allObjects, Formatting.Indented);
+            }
+            catch (Exception) {
+                // ignored
+                Console.WriteLine("Failed for " + path);
                 return;
             }
+        }
+        else if (path.Contains(".locres")) {
+            var file = provider.Files[path];
+            file.TryCreateReader(out var archive);
+            var locres = new FTextLocalizationResource(archive);
+            fullJson = JsonConvert.SerializeObject(locres, Formatting.Indented);
+        }
+        else {
+            Console.WriteLine("Cannot recognize " + path);
+            return;
+        }
 
-            File.WriteAllText(fullDirectory, fullJson);
+        path = path.Split(".")[0];
+        path = path.Replace(truncate, "") + ".json";
+        var fullDirectory = csvRoot + path;
+        if (CheckFile(fullDirectory) && File.ReadAllText(fullDirectory) == fullJson) {
+            return;
         }
-        catch (Exception) {
-            // ignored
-        }
+
+        File.WriteAllText(fullDirectory, fullJson);
+        Console.WriteLine("Written to " + path);
     }
 
     private static void DumpAllJson(string providerRoot) {
         var provider = GetProvider(providerRoot);
         List<string> keys = [];
         keys.AddRange(provider.Files.Keys.Where(
-            key => key.Contains("PM/Content/PaperMan") 
-                   // && !key.Contains("PaperMan/Maps") &&
-                   // !key.Contains("PaperMan/SkinAssets") &&
-                   // !key.Contains("/Cinematics/")
+            key => key.Contains("PM/Content/PaperMan")
+            // && !key.Contains("PaperMan/Maps") &&
+            // !key.Contains("PaperMan/SkinAssets") &&
+            // !key.Contains("/Cinematics/")
         ));
         // keys.AddRange(provider.Files.Keys.Where(key => !key.Contains("PM/Content/PaperMan")));
         keys.Sort();
@@ -131,9 +158,27 @@ public static class Program {
         }
     }
 
-    public static void Main(string[] args) {
+    class Options {
+        [Option('i', "input", Required = true, HelpText = "Where to get game files.")]
+        public string input { get; set; }
+
+        [Option('o', "output", Required = true, HelpText = "Where to store output files.")]
+        public string output { get; set; }
+
+        [Option('f', "filter", Required = true, HelpText = "Only export files with this string in its path.")]
+        public IEnumerable<string> filter { get; set; }
+
+        [Option('r', "replace", Required = true, HelpText = "Segment of the file path to replace.")]
+        public IEnumerable<string> replace { get; set; }
+
+        [Option("force", Required = false, Default = false,
+            HelpText = "Overwrite file even if one already exists. Only works for png.")]
+        public bool force { get; set; }
+    }
+
+    static void Main(string[] args) {
         if (args.Length == 0) {
-            Console.WriteLine("Need arg to specify server.");
+            Console.WriteLine("Need a command");
             return;
         }
 
@@ -145,15 +190,51 @@ public static class Program {
                 break;
             }
             case "GL": {
-                DumpGlobalData("D:/Strinova/Paks",
+                DumpGlobalData("D:/Games/Strinova/Game",
                     "D:/Strinova/AutoUnpack/GLExport",
                     "D:/Strinova/Strinova-data/Global");
                 break;
             }
-            case "Other": {
+            case "DumpAll": {
                 DumpAllJson("""D:\Games\CalabiYau\CalabiyauGame""");
                 break;
             }
+            case "json": {
+                CustomCommand(args, ProcessJson);
+                break;
+            }
+            case "png": {
+                CustomCommand(args, ProcessPng);
+                break;
+            }
+        }
+
+        Console.WriteLine("Program complete");
+    }
+
+    private static void CustomCommand(string[] args, Action<string, DefaultFileProvider, string, string, bool> action) {
+        var args2 = new string[args.Length - 1];
+        Array.Copy(args, 1, args2, 0, args.Length - 1);
+        CommandLine.Parser.Default.ParseArguments<Options>(args2)
+            .WithParsed(obj => {
+                var provider = GetProvider(obj.input);
+                var filters = new List<string>(obj.filter);
+                var replacements = new List<string>(obj.replace);
+                foreach (var f in provider.Files.Keys) {
+                    for (var i = 0; i < filters.Count; i++) {
+                        if (f.Contains(filters[i])) {
+                            action(obj.output, provider, f, replacements[i], obj.force);
+                            break;
+                        }
+                    }
+                }
+            })
+            .WithNotParsed(HandleParseError);
+    }
+
+    private static void HandleParseError(IEnumerable<Error> obj) {
+        foreach (var o in obj) {
+            Console.WriteLine(o.ToString());
         }
     }
 } // class Program

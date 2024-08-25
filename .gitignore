@@ -1,7 +1,8 @@
 ﻿.idea/
 .vscode/
 CNExport/
-audio/
+GLExport/
+audio/*/
 bin/
 obj/
 AutoUnpack.sln
