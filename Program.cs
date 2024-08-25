@@ -1,139 +1,45 @@
-﻿using System.Diagnostics;
-using CommandLine;
-using CUE4Parse_Conversion.Textures;
-using CUE4Parse.Encryption.Aes;
+﻿using CommandLine;
 using CUE4Parse.FileProvider;
-using CUE4Parse.UE4.Assets.Exports.Sound;
-using CUE4Parse.UE4.Assets.Exports.Texture;
-using CUE4Parse.UE4.Localization;
-using CUE4Parse.UE4.Objects.Core.Misc;
-using CUE4Parse.UE4.Versions;
-using Newtonsoft.Json;
-using SkiaSharp;
 
 namespace AutoUnpack {
 public static class Program {
-    private const string AesKey = "0x7456667CCC6BF87AAD3DAA2DDAC3B02564C5B9D74565BB36645C46AC210CDE40";
-
     private static void DumpChineseData(string providerRoot, string exportRoot, string csvRoot) {
-        var provider = GetProvider(providerRoot);
+        var provider = Unpacker.GetProvider(providerRoot);
         foreach (var f in provider.Files.Keys) {
             List<string> dynamicResources = [
                 "PM/Content/PaperMan/UI/Atlas/DynamicResource/Item/ItemIcon",
                 "PM/Content/PaperMan/UI/Atlas/DynamicResource/Emote"
             ];
             if (f.Contains("PM/Content/PaperMan/CSV")) {
-                ProcessJson(csvRoot, provider, f, "PM/Content/PaperMan");
+                Unpacker.ProcessJson(csvRoot, provider, f, "PM/Content/PaperMan");
             }
             else if (f.Contains("PM/Content/WwiseAssets/AkEvent")) {
-                ProcessJson(exportRoot, provider, f, "PM/Content");
-                ProcessJson(csvRoot, provider, f, "PM/Content");
+                Unpacker.ProcessJson(exportRoot, provider, f, "PM/Content");
+                Unpacker.ProcessJson(csvRoot, provider, f, "PM/Content");
             }
             else if (f.Contains("PM/Content/WwiseAudio")) {
-                var fullDirectory = exportRoot + f.Replace("PM/Content", "");
-                if (CheckFile(fullDirectory)) {
-                    continue;
-                }
-
-                var obj = provider.SaveAsset(f);
-
-                using (var fileStream = new FileStream(fullDirectory, FileMode.Create)) {
-                    fileStream.Write(obj);
-                }
+                Unpacker.ProcessAudio(exportRoot, provider, f, "PM/Content");
             }
             else if (dynamicResources.Any(s => f.Contains(s))) {
-                ProcessPng(exportRoot, provider, f, "PM/Content/PaperMan/UI/Atlas/DynamicResource");
+                Unpacker.ProcessPng(exportRoot, provider, f, "PM/Content/PaperMan/UI/Atlas/DynamicResource");
             }
         }
-    }
-
-    private static void ProcessPng(string exportRoot, DefaultFileProvider provider, string f, string truncate,
-        bool force = false) {
-        var path = f.Split(".")[0];
-        var obj = provider.LoadObject(path);
-        switch (obj) {
-            case UTexture2D texture: {
-                var filePath = path.Replace(truncate, "") + ".png";
-                var fullDirectory = exportRoot + filePath;
-                Directory.GetParent(fullDirectory)?.Create();
-                if (!force && CheckFile(fullDirectory)) {
-                    return;
-                }
-
-                var bitmap = texture.Decode()?.Encode(SKEncodedImageFormat.Png, 100);
-                using (var fileStream = new FileStream(fullDirectory, FileMode.Create)) {
-                    bitmap?.SaveTo(fileStream);
-                }
-
-                Console.WriteLine(filePath + " exported");
-                break;
-            }
-        }
-    }
-
-    private static bool CheckFile(string fullDirectory) {
-        Directory.GetParent(fullDirectory)?.Create();
-        return File.Exists(fullDirectory);
     }
 
     private static void DumpGlobalData(string providerRoot, string exportRoot, string jsonRoot) {
-        var provider = GetProvider(providerRoot);
+        var provider = Unpacker.GetProvider(providerRoot);
         foreach (var f in provider.Files.Keys) {
             if (f.Contains("PM/Content/PaperMan/CSV")) {
-                ProcessJson(jsonRoot, provider, f, "PM/Content/PaperMan");
+                Unpacker.ProcessJson(jsonRoot, provider, f, "PM/Content/PaperMan");
             }
             else if (f.Contains("PM/Content/Localization/Game")) {
-                ProcessJson(jsonRoot, provider, f, "PM/Content");
+                Unpacker.ProcessJson(jsonRoot, provider, f, "PM/Content");
             }
         }
-    }
-
-    private static DefaultFileProvider GetProvider(string providerRoot) {
-        var provider = new DefaultFileProvider(providerRoot, SearchOption.AllDirectories,
-            false, new VersionContainer(EGame.GAME_UE4_25));
-        provider.Initialize(); // will scan the archive directory for supported file extensions
-        provider.SubmitKey(new FGuid(), new FAesKey(AesKey));
-        provider.Mount();
-        return provider;
-    }
-
-    private static void ProcessJson(string csvRoot, DefaultFileProvider provider, string path, string truncate, bool force = false) {
-        string fullJson;
-        if (path.EndsWith(".uasset") || path.EndsWith(".uexp")) {
-            try {
-                var allObjects = provider.LoadObject(path.Split(".")[0]);
-                fullJson = JsonConvert.SerializeObject(allObjects, Formatting.Indented);
-            }
-            catch (Exception) {
-                // ignored
-                Console.WriteLine("Failed for " + path);
-                return;
-            }
-        }
-        else if (path.Contains(".locres")) {
-            var file = provider.Files[path];
-            file.TryCreateReader(out var archive);
-            var locres = new FTextLocalizationResource(archive);
-            fullJson = JsonConvert.SerializeObject(locres, Formatting.Indented);
-        }
-        else {
-            Console.WriteLine("Cannot recognize " + path);
-            return;
-        }
-
-        path = path.Split(".")[0];
-        path = path.Replace(truncate, "") + ".json";
-        var fullDirectory = csvRoot + path;
-        if (CheckFile(fullDirectory) && File.ReadAllText(fullDirectory) == fullJson) {
-            return;
-        }
-
-        File.WriteAllText(fullDirectory, fullJson);
-        Console.WriteLine("Written to " + path);
     }
 
     private static void DumpAllJson(string providerRoot) {
-        var provider = GetProvider(providerRoot);
+        var provider = Unpacker.GetProvider(providerRoot);
         List<string> keys = [];
         keys.AddRange(provider.Files.Keys.Where(
             key => key.Contains("PM/Content/PaperMan")
@@ -150,7 +56,7 @@ public static class Program {
             // Console.WriteLine(keys[i]);
             var f = keys[i];
             var path = f.Split(".")[0];
-            ProcessJson("allJson/", provider, path, "DO_NOT_TRUNCATE");
+            Unpacker.ProcessJson("allJson/", provider, path, "DO_NOT_TRUNCATE");
             i++;
             if (i % 1000 == 0) {
                 Console.WriteLine("{0} out of {1}", i, keys.Count);
@@ -165,18 +71,18 @@ public static class Program {
         [Option('o', "output", Required = true, HelpText = "Where to store output files.")]
         public string output { get; set; }
 
-        [Option('f', "filter", Required = true, HelpText = "Only export files with this string in its path.")]
-        public IEnumerable<string> filter { get; set; }
-
-        [Option('r', "replace", Required = true, HelpText = "Segment of the file path to replace.")]
-        public IEnumerable<string> replace { get; set; }
+        [Value(0, Required = true,
+            HelpText =
+                "Pairs of strings where the first denotes the file name pattern to export " +
+                "while the second denotes the part of the path to ignore/truncate.")]
+        public IEnumerable<string> exports { get; set; }
 
         [Option("force", Required = false, Default = false,
             HelpText = "Overwrite file even if one already exists. Only works for png.")]
         public bool force { get; set; }
     }
 
-    static void Main(string[] args) {
+    public static void Main(string[] args) {
         if (args.Length == 0) {
             Console.WriteLine("Need a command");
             return;
@@ -200,11 +106,15 @@ public static class Program {
                 break;
             }
             case "json": {
-                CustomCommand(args, ProcessJson);
+                CustomCommand(args, Unpacker.ProcessJson);
                 break;
             }
             case "png": {
-                CustomCommand(args, ProcessPng);
+                CustomCommand(args, Unpacker.ProcessPng);
+                break;
+            }
+            case "audio": {
+                CustomCommand(args, Unpacker.ProcessAudio);
                 break;
             }
         }
@@ -217,9 +127,12 @@ public static class Program {
         Array.Copy(args, 1, args2, 0, args.Length - 1);
         CommandLine.Parser.Default.ParseArguments<Options>(args2)
             .WithParsed(obj => {
-                var provider = GetProvider(obj.input);
-                var filters = new List<string>(obj.filter);
-                var replacements = new List<string>(obj.replace);
+                var provider = Unpacker.GetProvider(obj.input);
+                var filters = obj.exports.Where((x, i) => i % 2 == 0).ToList();
+                var replacements = obj.exports.Where((x, i) => i % 2 == 1).ToList();
+                if (filters.Count != replacements.Count) {
+                    Console.WriteLine("Filters and replacements don't match!");
+                }
                 foreach (var f in provider.Files.Keys) {
                     for (var i = 0; i < filters.Count; i++) {
                         if (f.Contains(filters[i])) {
