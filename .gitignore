@@ -3,6 +3,10 @@
 CNExport/
 GLExport/
 audio/*/
+!audio/wwiser
+audio/wwiser/*
+!audio/wwiser/wwiser.pyz
+!audio/wwiser/wwnames.db3
 bin/
 obj/
 AutoUnpack.sln
