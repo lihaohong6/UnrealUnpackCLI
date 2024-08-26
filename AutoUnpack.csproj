@@ -18,16 +18,25 @@
   <ItemGroup>
     <Compile Remove="CSV\**" />
     <Compile Remove="CNExport\**" />
+    <Compile Remove="audio\Japanese\**" />
+    <Compile Remove="audio\Chinese\**" />
+    <Compile Remove="audio\banks\**" />
   </ItemGroup>
 
   <ItemGroup>
     <EmbeddedResource Remove="CSV\**" />
     <EmbeddedResource Remove="CNExport\**" />
+    <EmbeddedResource Remove="audio\Japanese\**" />
+    <EmbeddedResource Remove="audio\Chinese\**" />
+    <EmbeddedResource Remove="audio\banks\**" />
   </ItemGroup>
 
   <ItemGroup>
     <None Remove="CSV\**" />
     <None Remove="CNExport\**" />
+    <None Remove="audio\Japanese\**" />
+    <None Remove="audio\Chinese\**" />
+    <None Remove="audio\banks\**" />
   </ItemGroup>
 
 </Project>

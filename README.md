@@ -14,3 +14,5 @@ The `-i` argument is the game directory where `pak` files can be found.
 The `-o` argument is where exports will be stored.
 
 The remaining positional arguments appear in pairs of `filter replace`. Only directories that contain the string in `filter` will be exported. In the export process, the part of the directory that contains the string in `replace` will be truncated to reduce the amount of nesting in the directory structure. 
+
+By default, the program Adding `--force` will forcefully overwrite existing files. This is useful when an image/audio file might be updated. 
