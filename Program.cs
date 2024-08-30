@@ -7,21 +7,30 @@ public static class Program {
         var provider = Unpacker.GetProvider(providerRoot);
         foreach (var f in provider.Files.Keys) {
             List<string> dynamicResources = [
-                "PM/Content/PaperMan/UI/Atlas/DynamicResource/Item/ItemIcon",
-                "PM/Content/PaperMan/UI/Atlas/DynamicResource/Emote"
+                "Item/ItemIcon",
+                "Emote",
+                "Weapon/InGameGrowth",
+                "Achievement",
+                "Skill",
+                "Store",
+                "RoleSkin/RoleProfile"
             ];
-            if (f.Contains("PM/Content/PaperMan/CSV")) {
-                Unpacker.ProcessJson(csvRoot, provider, f, "PM/Content/PaperMan");
+            var jsonRules = new List<(string, string)> {
+                ("PM/Content/PaperMan/CSV", "PM/Content/PaperMan"),
+                ("PM/Content/PaperMan/CyTable", "PM/Content/PaperMan"),
+                ("PM/Content/WwiseAssets/AkEvent", "PM/Content"),
+            };
+            foreach (var (pattern, replace) in jsonRules) {
+                if (f.Contains(pattern)) {
+                    Unpacker.ProcessJson(csvRoot, provider, f, replace);
+                    break;
+                }
             }
-            else if (f.Contains("PM/Content/WwiseAssets/AkEvent")) {
-                Unpacker.ProcessJson(exportRoot, provider, f, "PM/Content");
-                Unpacker.ProcessJson(csvRoot, provider, f, "PM/Content");
-            }
-            else if (f.Contains("PM/Content/WwiseAudio")) {
+            if (f.Contains("PM/Content/WwiseAudio")) {
                 Unpacker.ProcessAudio(exportRoot, provider, f, "PM/Content");
             }
-            else if (dynamicResources.Any(s => f.Contains(s))) {
-                Unpacker.ProcessPng(exportRoot, provider, f, "PM/Content/PaperMan/UI/Atlas/DynamicResource");
+            else if (dynamicResources.Any(s => f.Contains("PM/Content/PaperMan/UI/Atlas/DynamicResource/" + s))) {
+                Unpacker.ProcessPng(exportRoot, provider, f, "PM/Content/PaperMan/UI/Atlas");
             }
         }
     }
@@ -133,6 +142,7 @@ public static class Program {
                 if (filters.Count != replacements.Count) {
                     Console.WriteLine("Filters and replacements don't match!");
                 }
+
                 foreach (var f in provider.Files.Keys) {
                     for (var i = 0; i < filters.Count; i++) {
                         if (f.Contains(filters[i])) {
