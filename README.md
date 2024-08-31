@@ -16,3 +16,15 @@ The `-o` argument is where exports will be stored.
 The remaining positional arguments appear in pairs of `filter replace`. Only directories that contain the string in `filter` will be exported. In the export process, the part of the directory that contains the string in `replace` will be truncated to reduce the amount of nesting in the directory structure. 
 
 By default, the program does not overwrite images and audio if there is already a file with the same name in the export directory. Adding `--force` will forcefully overwrite existing files. This is useful when an image/audio file might be updated. 
+
+# Audio processing
+
+Exported audio files can be further processed by `audio.py` in the `audio` directory. Example:
+
+```
+python audio.py <path to Windows directory in audio export>
+```
+
+The program assumes that the `Windows` directory contains the `Chinese` and `Japanese` subdirectory. It'll then automatically generate `bank.xml` files and extract `wav` files. To extract `wav` files `vgmstream-cli` must be available in `PATH`.
+
+The audio processing utility embeds [wwiser](https://github.com/bnnm/wwiser) for convenience's sake.

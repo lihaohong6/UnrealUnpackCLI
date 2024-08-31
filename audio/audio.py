@@ -64,8 +64,9 @@ def main():
         subprocess.run(['python', 'wwiser/wwiser.pyz', config_file])
         Path('banks.xml').rename(banks_dir / xml_file)
 
-    # Create output directories
+    # Reset output directories
     for dir_name in ['Chinese', 'Japanese', 'sfx']:
+        shutil.rmtree(dir_name)
         Path(dir_name).mkdir(exist_ok=True)
 
     # Generate WAV files
