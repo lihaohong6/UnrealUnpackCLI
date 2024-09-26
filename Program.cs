@@ -8,17 +8,25 @@ public static class Program {
         foreach (var f in provider.Files.Keys) {
             List<string> dynamicResources = [
                 "Item/ItemIcon",
+                "Item/BigIcon",
                 "Emote",
                 "Weapon/InGameGrowth",
                 "Achievement",
                 "Skill",
                 "Store",
-                "RoleSkin/RoleProfile"
+                "RoleSkin/RoleProfile",
+                "RoleSkin/RoleHUD/"
             ];
             var jsonRules = new List<(string, string)> {
                 ("PM/Content/PaperMan/CSV", "PM/Content/PaperMan"),
                 ("PM/Content/PaperMan/CyTable", "PM/Content/PaperMan"),
                 ("PM/Content/WwiseAssets/AkEvent", "PM/Content"),
+            };
+            var otherPngRules = new List<(string, string)> {
+                ("PM/Content/PaperMan/Environment/Textures/Maps/Apartment/BP-AVG-CG",
+                    "PM/Content/PaperMan/Environment/Textures/Maps"),
+                ("PM/Content/PaperMan/Environment/Textures/Maps/Apartment/Pledge",
+                    "PM/Content/PaperMan/Environment/Textures/Maps"),
             };
             foreach (var (pattern, replace) in jsonRules) {
                 if (f.Contains(pattern)) {
@@ -26,11 +34,18 @@ public static class Program {
                     break;
                 }
             }
+
             if (f.Contains("PM/Content/WwiseAudio")) {
                 Unpacker.ProcessAudio(exportRoot, provider, f, "PM/Content");
             }
             else if (dynamicResources.Any(s => f.Contains("PM/Content/PaperMan/UI/Atlas/DynamicResource/" + s))) {
                 Unpacker.ProcessPng(exportRoot, provider, f, "PM/Content/PaperMan/UI/Atlas");
+            }
+
+            foreach (var (pattern, replace) in otherPngRules) {
+                if (f.Contains(pattern)) {
+                    Unpacker.ProcessPng(exportRoot, provider, f, replace);
+                }
             }
         }
     }

@@ -30,23 +30,25 @@ public static class Unpacker {
     public static void ProcessPng(string exportRoot, DefaultFileProvider provider, string f, string truncate,
         bool force = false) {
         var path = f.Split(".")[0];
-        var obj = provider.LoadObject(path);
-        switch (obj) {
-            case UTexture2D texture: {
-                var filePath = path.Replace(truncate, "") + ".png";
-                var fullDirectory = exportRoot + filePath;
-                Directory.GetParent(fullDirectory)?.Create();
-                if (!force && CheckFile(fullDirectory)) {
-                    return;
-                }
+        var objects = provider.LoadAllObjects(path);
+        foreach (var obj in objects) {
+            switch (obj) {
+                case UTexture2D texture: {
+                    var filePath = path.Replace(truncate, "") + ".png";
+                    var fullDirectory = exportRoot + filePath;
+                    Directory.GetParent(fullDirectory)?.Create();
+                    if (!force && CheckFile(fullDirectory)) {
+                        return;
+                    }
 
-                var bitmap = texture.Decode()?.Encode(SKEncodedImageFormat.Png, 100);
-                using (var fileStream = new FileStream(fullDirectory, FileMode.Create)) {
-                    bitmap?.SaveTo(fileStream);
-                }
+                    var bitmap = texture.Decode()?.Encode(SKEncodedImageFormat.Png, 100);
+                    using (var fileStream = new FileStream(fullDirectory, FileMode.Create)) {
+                        bitmap?.SaveTo(fileStream);
+                    }
 
-                Console.WriteLine(filePath + " exported");
-                break;
+                    Console.WriteLine(filePath + " exported");
+                    break;
+                }
             }
         }
     }
