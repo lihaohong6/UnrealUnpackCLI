@@ -10,4 +10,4 @@ audio/wwiser/*
 bin/
 obj/
 AutoUnpack.sln
-AutoUnpack.csproj.DotSettings
+AutoUnpack*DotSettings*

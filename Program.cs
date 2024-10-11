@@ -15,7 +15,9 @@ public static class Program {
                 "Skill",
                 "Store",
                 "RoleSkin/RoleProfile",
-                "RoleSkin/RoleHUD/"
+                "RoleSkin/RoleHUD",
+                "Decal",
+                "IdCard"
             ];
             var jsonRules = new List<(string, string)> {
                 ("PM/Content/PaperMan/CSV", "PM/Content/PaperMan"),
@@ -53,11 +55,19 @@ public static class Program {
     private static void DumpGlobalData(string providerRoot, string exportRoot, string jsonRoot) {
         var provider = Unpacker.GetProvider(providerRoot);
         foreach (var f in provider.Files.Keys) {
-            if (f.Contains("PM/Content/PaperMan/CSV")) {
-                Unpacker.ProcessJson(jsonRoot, provider, f, "PM/Content/PaperMan");
+            var jsonRules = new List<(string, string)> {
+                ("PM/Content/PaperMan/CSV", "PM/Content/PaperMan"),
+                ("PM/Content/Localization/Game", "PM/Content"),
+                ("PM/Content/WwiseAssets/AkEvent", "PM/Content")
+            };
+            foreach (var (pattern, replace) in jsonRules) {
+                if (f.Contains(pattern)) {
+                    Unpacker.ProcessJson(jsonRoot, provider, f, replace);
+                    break;
+                }
             }
-            else if (f.Contains("PM/Content/Localization/Game")) {
-                Unpacker.ProcessJson(jsonRoot, provider, f, "PM/Content");
+            if (f.Contains("PM/Content/WwiseAudio/Windows/English")) {
+                Unpacker.ProcessAudio(exportRoot, provider, f, "PM/Content");
             }
         }
     }
