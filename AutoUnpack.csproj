@@ -21,6 +21,9 @@
     <Compile Remove="audio\Japanese\**" />
     <Compile Remove="audio\Chinese\**" />
     <Compile Remove="audio\banks\**" />
+    <Compile Remove="audio\English\**" />
+    <Compile Remove="audio\sfx\**" />
+    <Compile Remove="audio\wwiser\wwiser\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -29,6 +32,9 @@
     <EmbeddedResource Remove="audio\Japanese\**" />
     <EmbeddedResource Remove="audio\Chinese\**" />
     <EmbeddedResource Remove="audio\banks\**" />
+    <EmbeddedResource Remove="audio\English\**" />
+    <EmbeddedResource Remove="audio\sfx\**" />
+    <EmbeddedResource Remove="audio\wwiser\wwiser\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -37,6 +43,9 @@
     <None Remove="audio\Japanese\**" />
     <None Remove="audio\Chinese\**" />
     <None Remove="audio\banks\**" />
+    <None Remove="audio\English\**" />
+    <None Remove="audio\sfx\**" />
+    <None Remove="audio\wwiser\wwiser\**" />
   </ItemGroup>
 
 </Project>
