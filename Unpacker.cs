@@ -37,13 +37,23 @@ public static class Unpacker {
                     var filePath = path.Replace(truncate, "") + ".png";
                     var fullDirectory = exportRoot + filePath;
                     Directory.GetParent(fullDirectory)?.Create();
-                    if (!force && CheckFile(fullDirectory)) {
+
+                    var exported = texture.Decode()?.Encode(SKEncodedImageFormat.Png, 100)?.ToArray();
+
+                    if (exported == null) {
+                        Console.WriteLine("Failed to export texture " + path);
                         return;
                     }
-
-                    var bitmap = texture.Decode()?.Encode(SKEncodedImageFormat.Png, 100);
+                    
+                    if (CheckFile(fullDirectory)) {
+                        var existing = File.ReadAllBytes(fullDirectory);
+                        if (existing.SequenceEqual(exported)) {
+                            return;
+                        }
+                    }
+                    
                     using (var fileStream = new FileStream(fullDirectory, FileMode.Create)) {
-                        bitmap?.SaveTo(fileStream);
+                        fileStream.Write(exported);
                     }
 
                     Console.WriteLine(filePath + " exported");
@@ -94,11 +104,15 @@ public static class Unpacker {
         bool force = false) {
         var filePath = path.Replace(truncate, "");
         var fullDirectory = outputRoot + filePath;
-        if (!force && CheckFile(fullDirectory)) {
-            return;
-        }
 
         var obj = provider.SaveAsset(path);
+
+        if (CheckFile(fullDirectory)) {
+            var existing = File.ReadAllBytes(fullDirectory);
+            if (existing.SequenceEqual(obj)) {
+                return;
+            }
+        }
 
         using (var fileStream = new FileStream(fullDirectory, FileMode.Create)) {
             fileStream.Write(obj);

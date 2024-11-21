@@ -3,6 +3,7 @@ using CUE4Parse.FileProvider;
 
 namespace AutoUnpack {
 public static class Program {
+    
     private static void DumpChineseData(string providerRoot, string exportRoot, string csvRoot) {
         var provider = Unpacker.GetProvider(providerRoot);
         foreach (var f in provider.Files.Keys) {
