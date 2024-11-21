@@ -3,9 +3,9 @@ using CUE4Parse.FileProvider;
 
 namespace AutoUnpack {
 public static class Program {
-    
     private static void DumpChineseData(string providerRoot, string exportRoot, string csvRoot) {
-        var provider = Unpacker.GetProvider(providerRoot);
+        var provider = Utilities.GetProvider(providerRoot);
+        var unpacker = new Unpacker(provider);
         foreach (var f in provider.Files.Keys) {
             List<string> dynamicResources = [
                 "Item/ItemIcon",
@@ -33,28 +33,30 @@ public static class Program {
             };
             foreach (var (pattern, replace) in jsonRules) {
                 if (f.Contains(pattern)) {
-                    Unpacker.ProcessJson(csvRoot, provider, f, replace);
+                    unpacker.ProcessJson(csvRoot, f, replace);
                     break;
                 }
             }
 
             if (f.Contains("PM/Content/WwiseAudio")) {
-                Unpacker.ProcessAudio(exportRoot, provider, f, "PM/Content");
+                unpacker.ProcessAudio(exportRoot, f, "PM/Content");
             }
             else if (dynamicResources.Any(s => f.Contains("PM/Content/PaperMan/UI/Atlas/DynamicResource/" + s))) {
-                Unpacker.ProcessPng(exportRoot, provider, f, "PM/Content/PaperMan/UI/Atlas");
+                unpacker.ProcessPng(exportRoot, f, "PM/Content/PaperMan/UI/Atlas");
             }
 
             foreach (var (pattern, replace) in otherPngRules) {
                 if (f.Contains(pattern)) {
-                    Unpacker.ProcessPng(exportRoot, provider, f, replace);
+                    unpacker.ProcessPng(exportRoot, f, replace);
                 }
             }
         }
+        unpacker.Wait();
     }
 
     private static void DumpGlobalData(string providerRoot, string exportRoot, string jsonRoot) {
-        var provider = Unpacker.GetProvider(providerRoot);
+        var provider = Utilities.GetProvider(providerRoot);
+        var unpacker = new Unpacker(provider);
         foreach (var f in provider.Files.Keys) {
             var jsonRules = new List<(string, string)> {
                 ("PM/Content/PaperMan/CSV", "PM/Content/PaperMan"),
@@ -63,18 +65,21 @@ public static class Program {
             };
             foreach (var (pattern, replace) in jsonRules) {
                 if (f.Contains(pattern)) {
-                    Unpacker.ProcessJson(jsonRoot, provider, f, replace);
+                    unpacker.ProcessJson(jsonRoot, f, replace);
                     break;
                 }
             }
+
             if (f.Contains("PM/Content/WwiseAudio/Windows/English")) {
-                Unpacker.ProcessAudio(exportRoot, provider, f, "PM/Content");
+                unpacker.ProcessAudio(exportRoot, f, "PM/Content");
             }
         }
+        unpacker.Wait();
     }
 
     private static void DumpAllJson(string providerRoot) {
-        var provider = Unpacker.GetProvider(providerRoot);
+        var provider = Utilities.GetProvider(providerRoot);
+        var unpacker = new Unpacker(provider);
         List<string> keys = [];
         keys.AddRange(provider.Files.Keys.Where(
             key => key.Contains("PM/Content/PaperMan")
@@ -91,7 +96,7 @@ public static class Program {
             // Console.WriteLine(keys[i]);
             var f = keys[i];
             var path = f.Split(".")[0];
-            Unpacker.ProcessJson("allJson/", provider, path, "DO_NOT_TRUNCATE");
+            unpacker.ProcessJson("allJson/", path, "DO_NOT_TRUNCATE");
             i++;
             if (i % 1000 == 0) {
                 Console.WriteLine("{0} out of {1}", i, keys.Count);
@@ -111,10 +116,6 @@ public static class Program {
                 "Pairs of strings where the first denotes the file name pattern to export " +
                 "while the second denotes the part of the path to ignore/truncate.")]
         public IEnumerable<string> exports { get; set; }
-
-        [Option("force", Required = false, Default = false,
-            HelpText = "Overwrite file even if one already exists. Only works for png.")]
-        public bool force { get; set; }
     }
 
     public static void Main(string[] args) {
@@ -140,16 +141,8 @@ public static class Program {
                 DumpAllJson("""D:\Games\CalabiYau\CalabiyauGame""");
                 break;
             }
-            case "json": {
-                CustomCommand(args, Unpacker.ProcessJson);
-                break;
-            }
-            case "png": {
-                CustomCommand(args, Unpacker.ProcessPng);
-                break;
-            }
-            case "audio": {
-                CustomCommand(args, Unpacker.ProcessAudio);
+            default: {
+                CustomCommand(args, args[0]);
                 break;
             }
         }
@@ -157,12 +150,23 @@ public static class Program {
         Console.WriteLine("Program complete");
     }
 
-    private static void CustomCommand(string[] args, Action<string, DefaultFileProvider, string, string, bool> action) {
+    private static void CustomCommand(string[] args, string command) {
         var args2 = new string[args.Length - 1];
         Array.Copy(args, 1, args2, 0, args.Length - 1);
         CommandLine.Parser.Default.ParseArguments<Options>(args2)
             .WithParsed(obj => {
-                var provider = Unpacker.GetProvider(obj.input);
+                var provider = Utilities.GetProvider(obj.input);
+                var unpacker = new Unpacker(provider);
+                var d = new Dictionary<string, Action<string, string, string>> {
+                    { "png", unpacker.ProcessPng },
+                    { "json", unpacker.ProcessJson },
+                    { "audio", unpacker.ProcessAudio }
+                };
+                if (!d.ContainsKey(command)) {
+                    Console.WriteLine("Unknown command \"" + command + "\"");
+                    return;
+                }
+                var action = d[command];
                 var filters = obj.exports.Where((x, i) => i % 2 == 0).ToList();
                 var replacements = obj.exports.Where((x, i) => i % 2 == 1).ToList();
                 if (filters.Count != replacements.Count) {
@@ -172,11 +176,12 @@ public static class Program {
                 foreach (var f in provider.Files.Keys) {
                     for (var i = 0; i < filters.Count; i++) {
                         if (f.Contains(filters[i])) {
-                            action(obj.output, provider, f, replacements[i], obj.force);
+                            action(obj.output, f, replacements[i]);
                             break;
                         }
                     }
                 }
+                unpacker.Wait();
             })
             .WithNotParsed(HandleParseError);
     }

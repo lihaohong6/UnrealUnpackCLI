@@ -10,66 +10,91 @@ using SkiaSharp;
 
 namespace AutoUnpack;
 
-public static class Unpacker {
-    private const string AesKey = "0x7456667CCC6BF87AAD3DAA2DDAC3B02564C5B9D74565BB36645C46AC210CDE40";
+public class Unpacker {
+    private readonly DefaultFileProvider _provider;
+    private const bool Multithreaded = true;
+    private int _taskCount = 0;
+    private int _progress = 0;
+
+    public Unpacker(DefaultFileProvider provider) {
+        _provider = provider;
+    }
+
+    ~Unpacker() {
+        if (Multithreaded) {
+            Wait();
+        }
+    }
+
+    private void RunTask(Action f) {
+        if (Multithreaded) {
+            ThreadPool.QueueUserWorkItem(_ => { 
+                f.Invoke();
+                Interlocked.Increment(ref _progress);
+            });
+            _taskCount++;
+        }
+        else {
+            f.Invoke();
+        }
+    }
+
+    public void Wait() {
+        Console.WriteLine($"Waiting for {_taskCount} tasks. ");
+        while (_progress < _taskCount) {
+            Thread.Sleep(100);
+            Console.WriteLine($"Completed {_progress} out of {_taskCount}");
+        }
+    }
     
-    private static bool CheckFile(string fullDirectory) {
+    private bool CheckFile(string fullDirectory) {
         Directory.GetParent(fullDirectory)?.Create();
         return File.Exists(fullDirectory);
     }
-    
-    public static DefaultFileProvider GetProvider(string providerRoot) {
-        var provider = new DefaultFileProvider(providerRoot, SearchOption.AllDirectories,
-            false, new VersionContainer(EGame.GAME_UE4_25));
-        provider.Initialize(); // will scan the archive directory for supported file extensions
-        provider.SubmitKey(new FGuid(), new FAesKey(AesKey));
-        provider.Mount();
-        return provider;
-    }
 
-    public static void ProcessPng(string exportRoot, DefaultFileProvider provider, string f, string truncate,
-        bool force = false) {
+    public void ProcessPng(string exportRoot, string f, string truncate) {
         var path = f.Split(".")[0];
-        var objects = provider.LoadAllObjects(path);
+        var objects = _provider.LoadAllObjects(path);
         foreach (var obj in objects) {
             switch (obj) {
                 case UTexture2D texture: {
                     var filePath = path.Replace(truncate, "") + ".png";
                     var fullDirectory = exportRoot + filePath;
                     Directory.GetParent(fullDirectory)?.Create();
-
-                    var exported = texture.Decode()?.Encode(SKEncodedImageFormat.Png, 100)?.ToArray();
-
-                    if (exported == null) {
-                        Console.WriteLine("Failed to export texture " + path);
-                        return;
-                    }
+                    var decoded = texture.Decode();
                     
-                    if (CheckFile(fullDirectory)) {
-                        var existing = File.ReadAllBytes(fullDirectory);
-                        if (existing.SequenceEqual(exported)) {
+                    RunTask(() => {
+                        var exported = decoded?.Encode(SKEncodedImageFormat.Png, 100)?.ToArray();
+
+                        if (exported == null) {
+                            Console.WriteLine("Failed to export texture " + path);
                             return;
                         }
-                    }
                     
-                    using (var fileStream = new FileStream(fullDirectory, FileMode.Create)) {
-                        fileStream.Write(exported);
-                    }
+                        if (CheckFile(fullDirectory)) {
+                            var existing = File.ReadAllBytes(fullDirectory);
+                            if (existing.SequenceEqual(exported)) {
+                                return;
+                            }
+                        }
+                    
+                        using (var fileStream = new FileStream(fullDirectory, FileMode.Create)) {
+                            fileStream.Write(exported);
+                        }
 
-                    Console.WriteLine(filePath + " exported");
+                        Console.WriteLine(filePath + " exported");
+                    });
                     break;
                 }
             }
         }
     }
-    
 
-    public static void ProcessJson(string csvRoot, DefaultFileProvider provider, string path, string truncate,
-        bool force = false) {
+    public void ProcessJson(string csvRoot, string path, string truncate) {
         string fullJson;
         if (path.EndsWith(".uasset") || path.EndsWith(".uexp")) {
             try {
-                var allObjects = provider.LoadObject(path.Split(".")[0]);
+                var allObjects = _provider.LoadObject(path.Split(".")[0]);
                 fullJson = JsonConvert.SerializeObject(allObjects, Formatting.Indented);
             }
             catch (Exception) {
@@ -79,7 +104,7 @@ public static class Unpacker {
             }
         }
         else if (path.Contains(".locres")) {
-            var file = provider.Files[path];
+            var file = _provider.Files[path];
             file.TryCreateReader(out var archive);
             var locres = new FTextLocalizationResource(archive);
             fullJson = JsonConvert.SerializeObject(locres, Formatting.Indented);
@@ -100,12 +125,11 @@ public static class Unpacker {
         Console.WriteLine("Written to " + path);
     }
 
-    public static void ProcessAudio(string outputRoot, DefaultFileProvider provider, string path, string truncate,
-        bool force = false) {
+    public void ProcessAudio(string outputRoot, string path, string truncate) {
         var filePath = path.Replace(truncate, "");
         var fullDirectory = outputRoot + filePath;
 
-        var obj = provider.SaveAsset(path);
+        var obj = _provider.SaveAsset(path);
 
         if (CheckFile(fullDirectory)) {
             var existing = File.ReadAllBytes(fullDirectory);
