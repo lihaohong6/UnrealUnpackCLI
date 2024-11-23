@@ -104,6 +104,12 @@ public static class Program {
         }
     }
 
+    private static void Other() {
+        var provider = Utilities.GetProvider("D:/Games/Strinova/Game");
+        var unpacker = new Unpacker(provider);
+        unpacker.ProcessJson("D:/Strinova/Strinova-data/Global", "PM/Content/WwiseAssets/AkEvent/Vox_Huixing_Cry.uasset", "PM/Content");
+    }
+
     class Options {
         [Option('i', "input", Required = true, HelpText = "Where to get game files.")]
         public string input { get; set; }
@@ -139,6 +145,10 @@ public static class Program {
             }
             case "DumpAll": {
                 DumpAllJson("""D:\Games\CalabiYau\CalabiyauGame""");
+                break;
+            }
+            case "Other": {
+                Other();
                 break;
             }
             default: {

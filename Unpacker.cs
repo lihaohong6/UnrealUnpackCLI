@@ -1,6 +1,7 @@
 ﻿using CUE4Parse_Conversion.Textures;
 using CUE4Parse.Encryption.Aes;
 using CUE4Parse.FileProvider;
+using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Assets.Exports.Texture;
 using CUE4Parse.UE4.Localization;
 using CUE4Parse.UE4.Objects.Core.Misc;
@@ -94,8 +95,16 @@ public class Unpacker {
         string fullJson;
         if (path.EndsWith(".uasset") || path.EndsWith(".uexp")) {
             try {
-                var allObjects = _provider.LoadObject(path.Split(".")[0]);
-                fullJson = JsonConvert.SerializeObject(allObjects, Formatting.Indented);
+                if (_provider.TryLoadObject(path.Split(".")[0], out var uObject)) {
+                    fullJson = JsonConvert.SerializeObject(uObject);
+                }
+                else {
+                    var allObjects = _provider.LoadAllObjects(path.Split(".")[0]);
+                    var lst = allObjects.ToList();
+                    fullJson = lst.Count == 1 ? 
+                        JsonConvert.SerializeObject(lst.First(), Formatting.Indented) : 
+                        JsonConvert.SerializeObject(allObjects, Formatting.Indented);
+                }
             }
             catch (Exception) {
                 // ignored
