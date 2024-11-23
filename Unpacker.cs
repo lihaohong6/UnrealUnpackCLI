@@ -91,15 +91,16 @@ public class Unpacker {
         }
     }
 
-    public void ProcessJson(string csvRoot, string path, string truncate) {
+    public void ProcessJson(string csvRoot, string fullPath, string truncate) {
         string fullJson;
-        if (path.EndsWith(".uasset") || path.EndsWith(".uexp")) {
+        string path = fullPath.Split(".")[0];
+        if (fullPath.EndsWith(".uasset") || fullPath.EndsWith(".uexp")) {
             try {
-                if (_provider.TryLoadObject(path.Split(".")[0], out var uObject)) {
-                    fullJson = JsonConvert.SerializeObject(uObject);
+                if (_provider.TryLoadObject(path, out var uObject)) {
+                    fullJson = JsonConvert.SerializeObject(uObject, Formatting.Indented);
                 }
                 else {
-                    var allObjects = _provider.LoadAllObjects(path.Split(".")[0]);
+                    var allObjects = _provider.LoadAllObjects(path);
                     var lst = allObjects.ToList();
                     fullJson = lst.Count == 1 ? 
                         JsonConvert.SerializeObject(lst.First(), Formatting.Indented) : 
@@ -112,18 +113,17 @@ public class Unpacker {
                 return;
             }
         }
-        else if (path.Contains(".locres")) {
-            var file = _provider.Files[path];
+        else if (fullPath.Contains(".locres")) {
+            var file = _provider.Files[fullPath];
             file.TryCreateReader(out var archive);
             var locres = new FTextLocalizationResource(archive);
             fullJson = JsonConvert.SerializeObject(locres, Formatting.Indented);
         }
         else {
-            Console.WriteLine("Cannot recognize " + path);
+            Console.WriteLine("Cannot recognize " + fullPath);
             return;
         }
 
-        path = path.Split(".")[0];
         path = path.Replace(truncate, "") + ".json";
         var fullDirectory = csvRoot + path;
         if (CheckFile(fullDirectory) && File.ReadAllText(fullDirectory) == fullJson) {
