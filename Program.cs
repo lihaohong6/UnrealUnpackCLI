@@ -18,7 +18,9 @@ public static class Program {
                 "RoleSkin/RoleProfile",
                 "RoleSkin/RoleHUD",
                 "Decal",
-                "IdCard"
+                "IdCard",
+                "Map/Introduce",
+                "Map/Mini2D"
             ];
             var jsonRules = new List<(string, string)> {
                 ("PM/Content/PaperMan/CSV", "PM/Content/PaperMan"),
