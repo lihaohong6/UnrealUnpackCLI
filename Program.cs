@@ -3,80 +3,82 @@ using CUE4Parse.FileProvider;
 
 namespace AutoUnpack {
 public static class Program {
-    private static void DumpChineseData(string providerRoot, string exportRoot, string csvRoot) {
-        var provider = Utilities.GetProvider(providerRoot);
-        var unpacker = new Unpacker(provider);
-        foreach (var f in provider.Files.Keys) {
-            List<string> dynamicResources = [
-                "Item/ItemIcon",
-                "Item/BigIcon",
-                "Emote",
-                "Weapon/InGameGrowth",
-                "Achievement",
-                "Skill",
-                "Store",
-                "RoleSkin/RoleProfile",
-                "RoleSkin/RoleHUD",
-                "Decal",
-                "IdCard",
-                "Map/Introduce",
-                "Map/Mini2D"
-            ];
-            var jsonRules = new List<(string, string)> {
-                ("PM/Content/PaperMan/CSV", "PM/Content/PaperMan"),
-                ("PM/Content/PaperMan/CyTable", "PM/Content/PaperMan"),
-                ("PM/Content/WwiseAssets/AkEvent", "PM/Content"),
-            };
-            var otherPngRules = new List<(string, string)> {
-                ("PM/Content/PaperMan/Environment/Textures/Maps/Apartment/BP-AVG-CG",
-                    "PM/Content/PaperMan/Environment/Textures/Maps"),
-                ("PM/Content/PaperMan/Environment/Textures/Maps/Apartment/Pledge",
-                    "PM/Content/PaperMan/Environment/Textures/Maps"),
-            };
-            foreach (var (pattern, replace) in jsonRules) {
-                if (f.Contains(pattern)) {
-                    unpacker.ProcessJson(csvRoot, f, replace);
-                    break;
-                }
-            }
 
-            if (f.Contains("PM/Content/WwiseAudio")) {
-                unpacker.ProcessAudio(exportRoot, f, "PM/Content");
-            }
-            else if (dynamicResources.Any(s => f.Contains("PM/Content/PaperMan/UI/Atlas/DynamicResource/" + s))) {
-                unpacker.ProcessPng(exportRoot, f, "PM/Content/PaperMan/UI/Atlas");
-            }
-
-            foreach (var (pattern, replace) in otherPngRules) {
-                if (f.Contains(pattern)) {
-                    unpacker.ProcessPng(exportRoot, f, replace);
-                }
-            }
-        }
-        unpacker.Wait();
+    private static List<(string, string)> DynamicResourceToPngRules(List<string> rules) {
+        return rules.Select(rule => ("DynamicResource/" + rule, "PM/Content/PaperMan/UI/Atlas")).ToList();
     }
 
-    private static void DumpGlobalData(string providerRoot, string exportRoot, string jsonRoot) {
+    private static void DumpData(string providerRoot, string exportRoot, string jsonRoot,
+        List<(string, string)> jsonRules, List<(string, string)> pngRules, List<(string, string)> audioRules) {
         var provider = Utilities.GetProvider(providerRoot);
         var unpacker = new Unpacker(provider);
         foreach (var f in provider.Files.Keys) {
-            var jsonRules = new List<(string, string)> {
-                ("PM/Content/PaperMan/CSV", "PM/Content/PaperMan"),
-                ("PM/Content/Localization/Game", "PM/Content"),
-                ("PM/Content/WwiseAssets/AkEvent", "PM/Content")
-            };
             foreach (var (pattern, replace) in jsonRules) {
                 if (f.Contains(pattern)) {
                     unpacker.ProcessJson(jsonRoot, f, replace);
                     break;
                 }
             }
-
-            if (f.Contains("PM/Content/WwiseAudio/Windows/English")) {
-                unpacker.ProcessAudio(exportRoot, f, "PM/Content");
+            foreach (var (pattern, replace) in pngRules) {
+                if (f.Contains(pattern)) {
+                    unpacker.ProcessPng(exportRoot, f, replace);
+                    break;
+                }
+            }
+            foreach (var (pattern, replace) in audioRules) {
+                if (f.Contains(pattern)) {
+                    unpacker.ProcessAudio(exportRoot, f, replace);
+                    break;
+                }
             }
         }
         unpacker.Wait();
+    }
+    
+    private static void DumpChineseData(string providerRoot, string exportRoot, string csvRoot) {
+        List<string> dynamicResources = [
+            "Item/ItemIcon",
+            "Item/BigIcon",
+            "Emote",
+            "Weapon/InGameGrowth",
+            "Achievement",
+            "Skill",
+            "Store",
+            "RoleSkin/RoleProfile",
+            "RoleSkin/RoleHUD",
+            "Decal",
+            "IdCard",
+            "Map/Introduce",
+            "Map/Mini2D"
+        ];
+        var jsonRules = new List<(string, string)> {
+            ("PM/Content/PaperMan/CSV", "PM/Content/PaperMan"),
+            ("PM/Content/PaperMan/CyTable", "PM/Content/PaperMan"),
+            ("PM/Content/WwiseAssets/AkEvent", "PM/Content"),
+        };
+        var pngRules = new List<(string, string)> {
+            ("PM/Content/PaperMan/Environment/Textures/Maps/Apartment/BP-AVG-CG",
+                "PM/Content/PaperMan/Environment/Textures/Maps"),
+            ("PM/Content/PaperMan/Environment/Textures/Maps/Apartment/Pledge",
+                "PM/Content/PaperMan/Environment/Textures/Maps"),
+        };
+        pngRules.AddRange(DynamicResourceToPngRules(dynamicResources));
+        var audioRules = new List<(string, string)> {
+            ("PM/Content/WwiseAudio", "PM/Content"),
+        };
+        DumpData(providerRoot, exportRoot, csvRoot, jsonRules, pngRules, audioRules);
+    }
+
+    private static void DumpGlobalData(string providerRoot, string exportRoot, string jsonRoot) {
+        var jsonRules = new List<(string, string)> {
+            ("PM/Content/PaperMan/CSV", "PM/Content/PaperMan"),
+            ("PM/Content/Localization/Game", "PM/Content"),
+            ("PM/Content/WwiseAssets/AkEvent", "PM/Content")
+        };
+        var audioRules = new List<(string, string)> {
+            ("PM/Content/WwiseAudio/Windows/English", "PM/Content"),
+        };
+        DumpData(providerRoot, exportRoot, jsonRoot, jsonRules, [], audioRules);
     }
 
     private static void DumpAllJson(string providerRoot) {

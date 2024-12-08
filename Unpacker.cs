@@ -16,6 +16,7 @@ public class Unpacker {
     private const bool Multithreaded = true;
     private int _taskCount = 0;
     private int _progress = 0;
+    private HashSet<string> _unpackedFiles = [];
 
     public Unpacker(DefaultFileProvider provider) {
         _provider = provider;
@@ -60,6 +61,11 @@ public class Unpacker {
             switch (obj) {
                 case UTexture2D texture: {
                     var filePath = path.Replace(truncate, "") + ".png";
+                    var success = _unpackedFiles.Add(filePath);
+                    if (!success) {
+                        // This file is a dup
+                        break;
+                    }
                     var fullDirectory = exportRoot + filePath;
                     Directory.GetParent(fullDirectory)?.Create();
                     var decoded = texture.Decode();
