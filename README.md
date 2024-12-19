@@ -1,4 +1,8 @@
-﻿# Examples
+﻿This is a command-line utility for exporting assets from Unreal Engine games. 
+
+Since [FModel](https://github.com/4sval/FModel) only provides a graphical user interface, repeatedly bulk-exporting assets becomes labor-intensive. This project parses command line arguments and then calls [CUE4Parse](https://github.com/FabianFG/CUE4Parse) to do the heavy lifting.
+
+# Examples
 ```
 .\AutoUnpack.exe json -i D:\Games\CalabiYau\CalabiyauGame\ -o json_export PaperMan/CSV PM/Content/PaperMan PaperMan/CyTable PM/Content/PaperMan WwiseAssets/AkEvent PM/Content/WwiseAssets
 .\AutoUnpack.exe png -i D:\Games\CalabiYau\CalabiyauGame\ -o png_export DynamicResource/Emote PM/Content/PaperMan/UI/Atlas/DynamicResource DynamicResource/Item/ItemIcon PM/Content/PaperMan/UI/Atlas/DynamicResource
