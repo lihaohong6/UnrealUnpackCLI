@@ -6,14 +6,16 @@ I have not written a single line of C# before this project, so you may see code 
 
 # Examples
 ```
-.\AutoUnpack.exe json -i D:\Games\CalabiYau\CalabiyauGame\ -o json_export PaperMan/CSV PM/Content/PaperMan PaperMan/CyTable PM/Content/PaperMan WwiseAssets/AkEvent PM/Content/WwiseAssets
-.\AutoUnpack.exe png -i D:\Games\CalabiYau\CalabiyauGame\ -o png_export DynamicResource/Emote PM/Content/PaperMan/UI/Atlas/DynamicResource DynamicResource/Item/ItemIcon PM/Content/PaperMan/UI/Atlas/DynamicResource
-.\AutoUnpack.exe bin -i D:\Games\CalabiYau\CalabiyauGame\ -o audio_export WwiseAudio/Windows PM/Content/WwiseAudio/Windows
+.\AutoUnpack.exe -t json -k <AES key here> -i D:\Games\CalabiYau\CalabiyauGame\ -o json_export PaperMan/CSV PM/Content/PaperMan PaperMan/CyTable PM/Content/PaperMan WwiseAssets/AkEvent PM/Content/WwiseAssets
+.\AutoUnpack.exe -t png -k <AES key here> -i D:\Games\CalabiYau\CalabiyauGame\ -o png_export DynamicResource/Emote PM/Content/PaperMan/UI/Atlas/DynamicResource DynamicResource/Item/ItemIcon PM/Content/PaperMan/UI/Atlas/DynamicResource
+.\AutoUnpack.exe -t bin -k <AES key here> -i D:\Games\CalabiYau\CalabiyauGame\ -o audio_export WwiseAudio/Windows PM/Content/WwiseAudio/Windows
 ```
 
 # Explanation
 
-The first argument specifies the export type. Only `json`, `png`, and binary files are supported.
+The `-t` argument specifies the export type. Only `json`, `png`, and binary files are supported.
+
+The `-k` argument specifies the AES key for decrypting the package.
 
 The `-i` argument is the game directory where `pak` files can be found.
 
