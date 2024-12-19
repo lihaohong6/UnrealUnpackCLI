@@ -140,7 +140,7 @@ public class Unpacker {
         Console.WriteLine("Written to " + path);
     }
 
-    public void ProcessAudio(string outputRoot, string path, string truncate) {
+    public void ProcessBinaryFiles(string outputRoot, string path, string truncate) {
         var filePath = path.Replace(truncate, "");
         var fullDirectory = outputRoot + filePath;
 

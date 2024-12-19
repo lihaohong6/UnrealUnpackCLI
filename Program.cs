@@ -9,7 +9,7 @@ public static class Program {
     }
 
     private static void DumpData(string providerRoot, string exportRoot, string jsonRoot,
-        List<(string, string)> jsonRules, List<(string, string)> pngRules, List<(string, string)> audioRules) {
+        List<(string, string)> jsonRules, List<(string, string)> pngRules, List<(string, string)> binaryRules) {
         var provider = Utilities.GetProvider(providerRoot);
         var unpacker = new Unpacker(provider);
         foreach (var f in provider.Files.Keys) {
@@ -25,9 +25,9 @@ public static class Program {
                     break;
                 }
             }
-            foreach (var (pattern, replace) in audioRules) {
+            foreach (var (pattern, replace) in binaryRules) {
                 if (f.Contains(pattern)) {
-                    unpacker.ProcessAudio(exportRoot, f, replace);
+                    unpacker.ProcessBinaryFiles(exportRoot, f, replace);
                     break;
                 }
             }
@@ -118,6 +118,9 @@ public static class Program {
     }
 
     class Options {
+        [Option('t', "type", Required = true, HelpText = "The type of file to export (json, png, binary).")]
+        public string type { get; set; }
+        
         [Option('i', "input", Required = true, HelpText = "Where to get game files.")]
         public string input { get; set; }
 
@@ -159,7 +162,7 @@ public static class Program {
                 break;
             }
             default: {
-                CustomCommand(args, args[0]);
+                CustomCommand(args);
                 break;
             }
         }
@@ -167,20 +170,19 @@ public static class Program {
         Console.WriteLine("Program complete");
     }
 
-    private static void CustomCommand(string[] args, string command) {
-        var args2 = new string[args.Length - 1];
-        Array.Copy(args, 1, args2, 0, args.Length - 1);
-        CommandLine.Parser.Default.ParseArguments<Options>(args2)
+    private static void CustomCommand(string[] args) {
+        CommandLine.Parser.Default.ParseArguments<Options>(args)
             .WithParsed(obj => {
                 var provider = Utilities.GetProvider(obj.input);
                 var unpacker = new Unpacker(provider);
                 var d = new Dictionary<string, Action<string, string, string>> {
                     { "png", unpacker.ProcessPng },
                     { "json", unpacker.ProcessJson },
-                    { "audio", unpacker.ProcessAudio }
+                    { "bin", unpacker.ProcessBinaryFiles }
                 };
+                var command = obj.type;
                 if (!d.ContainsKey(command)) {
-                    Console.WriteLine("Unknown command \"" + command + "\"");
+                    Console.WriteLine("Unknown export type \"" + command + "\"");
                     return;
                 }
                 var action = d[command];
