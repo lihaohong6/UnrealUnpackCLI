@@ -125,6 +125,9 @@ public static class Program {
 
         [Option('o', "output", Default = ".", HelpText = "Where to store output files.")]
         public required string Output { get; set; }
+        
+        [Option('k', "key", Required = true, HelpText = "Where to store output files.")]
+        public required string Key {get; set; }
 
         [Value(0, Required = true,
             HelpText =
@@ -172,7 +175,9 @@ public static class Program {
     private static void CustomCommand(string[] args) {
         Parser.Default.ParseArguments<Options>(args)
             .WithParsed(obj => {
-                var provider = Utilities.GetProvider(obj.Input);
+                var inputDirectory = obj.Input;
+                Utilities.CheckProviderRoot(inputDirectory);
+                var provider = Utilities.GetProvider(inputDirectory, obj.Key);
                 var unpacker = new Unpacker(provider);
                 var d = new Dictionary<string, Action<string, string, string>> {
                     { "png", unpacker.ProcessPng },
