@@ -1,35 +1,25 @@
 ﻿using CUE4Parse_Conversion.Textures;
-using CUE4Parse.Encryption.Aes;
 using CUE4Parse.FileProvider;
-using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Assets.Exports.Texture;
 using CUE4Parse.UE4.Localization;
-using CUE4Parse.UE4.Objects.Core.Misc;
-using CUE4Parse.UE4.Versions;
 using Newtonsoft.Json;
 using SkiaSharp;
 
 namespace AutoUnpack;
 
-public class Unpacker {
-    private readonly DefaultFileProvider _provider;
-    private const bool Multithreaded = true;
-    private int _taskCount = 0;
-    private int _progress = 0;
-    private HashSet<string> _unpackedFiles = [];
-
-    public Unpacker(DefaultFileProvider provider) {
-        _provider = provider;
-    }
+public class Unpacker(DefaultFileProvider provider, bool multithreaded = true) {
+    private int _taskCount;
+    private int _progress;
+    private readonly HashSet<string> _unpackedFiles = [];
 
     ~Unpacker() {
-        if (Multithreaded) {
+        if (multithreaded) {
             Wait();
         }
     }
 
     private void RunTask(Action f) {
-        if (Multithreaded) {
+        if (multithreaded) {
             ThreadPool.QueueUserWorkItem(_ => { 
                 f.Invoke();
                 Interlocked.Increment(ref _progress);
@@ -56,7 +46,7 @@ public class Unpacker {
 
     public void ProcessPng(string exportRoot, string f, string truncate) {
         var path = f.Split(".")[0];
-        var objects = _provider.LoadAllObjects(path);
+        var objects = provider.LoadAllObjects(path);
         foreach (var obj in objects) {
             switch (obj) {
                 case UTexture2D texture: {
@@ -102,11 +92,11 @@ public class Unpacker {
         string path = fullPath.Split(".")[0];
         if (fullPath.EndsWith(".uasset") || fullPath.EndsWith(".uexp")) {
             try {
-                if (_provider.TryLoadObject(path, out var uObject)) {
+                if (provider.TryLoadObject(path, out var uObject)) {
                     fullJson = JsonConvert.SerializeObject(uObject, Formatting.Indented);
                 }
                 else {
-                    var allObjects = _provider.LoadAllObjects(path);
+                    var allObjects = provider.LoadAllObjects(path);
                     var lst = allObjects.ToList();
                     fullJson = lst.Count == 1 ? 
                         JsonConvert.SerializeObject(lst.First(), Formatting.Indented) : 
@@ -120,7 +110,7 @@ public class Unpacker {
             }
         }
         else if (fullPath.Contains(".locres")) {
-            var file = _provider.Files[fullPath];
+            var file = provider.Files[fullPath];
             file.TryCreateReader(out var archive);
             var locres = new FTextLocalizationResource(archive);
             fullJson = JsonConvert.SerializeObject(locres, Formatting.Indented);
@@ -144,7 +134,7 @@ public class Unpacker {
         var filePath = path.Replace(truncate, "");
         var fullDirectory = outputRoot + filePath;
 
-        var obj = _provider.SaveAsset(path);
+        var obj = provider.SaveAsset(path);
 
         if (CheckFile(fullDirectory)) {
             var existing = File.ReadAllBytes(fullDirectory);

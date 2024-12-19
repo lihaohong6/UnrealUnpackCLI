@@ -1,5 +1,4 @@
 ﻿using CommandLine;
-using CUE4Parse.FileProvider;
 
 namespace AutoUnpack {
 public static class Program {
@@ -119,19 +118,19 @@ public static class Program {
 
     class Options {
         [Option('t', "type", Required = true, HelpText = "The type of file to export (json, png, binary).")]
-        public string type { get; set; }
+        public required string Type { get; set; }
         
         [Option('i', "input", Required = true, HelpText = "Where to get game files.")]
-        public string input { get; set; }
+        public required string Input { get; set; }
 
-        [Option('o', "output", Required = true, HelpText = "Where to store output files.")]
-        public string output { get; set; }
+        [Option('o', "output", Default = ".", HelpText = "Where to store output files.")]
+        public required string Output { get; set; }
 
         [Value(0, Required = true,
             HelpText =
                 "Pairs of strings where the first denotes the file name pattern to export " +
                 "while the second denotes the part of the path to ignore/truncate.")]
-        public IEnumerable<string> exports { get; set; }
+        public required IEnumerable<string> Exports { get; set; }
     }
 
     public static void Main(string[] args) {
@@ -171,23 +170,23 @@ public static class Program {
     }
 
     private static void CustomCommand(string[] args) {
-        CommandLine.Parser.Default.ParseArguments<Options>(args)
+        Parser.Default.ParseArguments<Options>(args)
             .WithParsed(obj => {
-                var provider = Utilities.GetProvider(obj.input);
+                var provider = Utilities.GetProvider(obj.Input);
                 var unpacker = new Unpacker(provider);
                 var d = new Dictionary<string, Action<string, string, string>> {
                     { "png", unpacker.ProcessPng },
                     { "json", unpacker.ProcessJson },
                     { "bin", unpacker.ProcessBinaryFiles }
                 };
-                var command = obj.type;
+                var command = obj.Type;
                 if (!d.ContainsKey(command)) {
                     Console.WriteLine("Unknown export type \"" + command + "\"");
                     return;
                 }
                 var action = d[command];
-                var filters = obj.exports.Where((x, i) => i % 2 == 0).ToList();
-                var replacements = obj.exports.Where((x, i) => i % 2 == 1).ToList();
+                var filters = obj.Exports.Where((x, i) => i % 2 == 0).ToList();
+                var replacements = obj.Exports.Where((x, i) => i % 2 == 1).ToList();
                 if (filters.Count != replacements.Count) {
                     Console.WriteLine("Filters and replacements don't match!");
                 }
@@ -195,7 +194,7 @@ public static class Program {
                 foreach (var f in provider.Files.Keys) {
                     for (var i = 0; i < filters.Count; i++) {
                         if (f.Contains(filters[i])) {
-                            action(obj.output, f, replacements[i]);
+                            action(obj.Output, f, replacements[i]);
                             break;
                         }
                     }
