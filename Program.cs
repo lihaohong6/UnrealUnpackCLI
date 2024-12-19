@@ -76,9 +76,12 @@ public static class Program {
             ("PM/Content/WwiseAssets/AkEvent", "PM/Content")
         };
         var audioRules = new List<(string, string)> {
-            ("PM/Content/WwiseAudio/Windows/English", "PM/Content"),
+            ("PM/Content/WwiseAudio/Windows/English", "PM/Content")
         };
-        DumpData(providerRoot, exportRoot, jsonRoot, jsonRules, [], audioRules);
+        List<string> dynamicResources = [
+            "Decal"
+        ];
+        DumpData(providerRoot, exportRoot, jsonRoot, jsonRules, DynamicResourceToPngRules(dynamicResources), audioRules);
     }
 
     private static void DumpAllJson(string providerRoot) {
