@@ -6,7 +6,7 @@ public static class Program {
     private static List<(string, string)> DynamicResourceToPngRules(List<string> rules) {
         return rules.Select(rule => ("DynamicResource/" + rule, "PM/Content/PaperMan/UI/Atlas")).ToList();
     }
-
+    
     private static void DumpData(string providerRoot, string exportRoot, string jsonRoot,
         List<(string, string)> jsonRules, List<(string, string)> pngRules, List<(string, string)> binaryRules) {
         var provider = Utilities.GetProvider(providerRoot);
@@ -33,8 +33,8 @@ public static class Program {
         }
         unpacker.Wait();
     }
-    
-    private static void DumpChineseData(string providerRoot, string exportRoot, string csvRoot) {
+
+    private static List<(string, string)> GetPngRules() {
         List<string> dynamicResources = [
             "Item/ItemIcon",
             "Item/BigIcon",
@@ -50,11 +50,6 @@ public static class Program {
             "Map/Introduce",
             "Map/Mini2D"
         ];
-        var jsonRules = new List<(string, string)> {
-            ("PM/Content/PaperMan/CSV", "PM/Content/PaperMan"),
-            ("PM/Content/PaperMan/CyTable", "PM/Content/PaperMan"),
-            ("PM/Content/WwiseAssets/AkEvent", "PM/Content"),
-        };
         var pngRules = new List<(string, string)> {
             ("PM/Content/PaperMan/Environment/Textures/Maps/Apartment/BP-AVG-CG",
                 "PM/Content/PaperMan/Environment/Textures/Maps"),
@@ -62,6 +57,17 @@ public static class Program {
                 "PM/Content/PaperMan/Environment/Textures/Maps"),
         };
         pngRules.AddRange(DynamicResourceToPngRules(dynamicResources));
+        return pngRules;
+    }
+    
+    private static void DumpChineseData(string providerRoot, string exportRoot, string csvRoot) {
+        
+        var jsonRules = new List<(string, string)> {
+            ("PM/Content/PaperMan/CSV", "PM/Content/PaperMan"),
+            ("PM/Content/PaperMan/CyTable", "PM/Content/PaperMan"),
+            ("PM/Content/WwiseAssets/AkEvent", "PM/Content"),
+        };
+        var pngRules = GetPngRules();
         var audioRules = new List<(string, string)> {
             ("PM/Content/WwiseAudio", "PM/Content"),
         };
@@ -77,10 +83,8 @@ public static class Program {
         var audioRules = new List<(string, string)> {
             ("PM/Content/WwiseAudio/Windows/English", "PM/Content")
         };
-        List<string> dynamicResources = [
-            "Decal"
-        ];
-        DumpData(providerRoot, exportRoot, jsonRoot, jsonRules, DynamicResourceToPngRules(dynamicResources), audioRules);
+        var pngRules = GetPngRules();
+        DumpData(providerRoot, exportRoot, jsonRoot, jsonRules, pngRules, audioRules);
     }
 
     private static void DumpAllJson(string providerRoot) {
