@@ -2,10 +2,27 @@
 import shutil
 import subprocess
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 from sys import argv
 
 config_file = Path("wwconfig.txt")
+
+
+@dataclass
+class AudioConfig:
+    audio_path: Path
+    bank_file: str
+    output_dir: str
+
+
+def get_configs(root: Path, root_gl: Path):
+    return [
+        AudioConfig(root / 'Chinese', 'cn_banks.xml', 'Chinese'),
+        AudioConfig(root / 'Japanese', 'ja_bank.xml', 'Japanese'),
+        AudioConfig(root_gl / 'English', 'en_banks.xml', 'English'),
+        AudioConfig(root, 'sfx_banks.xml', 'sfx')
+    ]
 
 
 def audio_convert(source: Path, dest: Path):
@@ -55,33 +72,27 @@ def main():
         shutil.rmtree(banks_dir)
     banks_dir.mkdir(exist_ok=True)
 
-    # Process bnk files
-    configs = [
-        (audio_root / 'Chinese', 'cn_banks.xml'),
-        (audio_root / 'Japanese', 'ja_banks.xml'),
-        (audio_root_en / 'English', 'en_banks.xml'),
-        (audio_root, 'sfx_banks.xml')
-    ]
+    configs = get_configs(audio_root, audio_root_en)
     
-    for audio_path, xml_file in configs:
-        out_string = " ".join(f'"{str(p)}"' for p in audio_path.glob('*.bnk'))
+    # Process bnk files
+    for config in configs:
+        out_string = " ".join(f'"{str(p)}"' for p in config.audio_path.glob('*.bnk'))
         if out_string == "":
             continue
         with open(config_file, "w") as f:
             f.write(out_string)
         subprocess.run(['python', 'wwiser/wwiser.pyz', config_file])
-        Path('banks.xml').rename(banks_dir / xml_file)
+        Path('banks.xml').rename(banks_dir / config.bank_file)
 
     # Reset output directories
-    for dir_name in ['Chinese', 'Japanese', 'English', 'sfx']:
+    for config in configs:
+        dir_name = config.output_dir
         shutil.rmtree(dir_name, ignore_errors=True)
         Path(dir_name).mkdir(exist_ok=True)
 
     # Generate WAV files
-    generate_wav(audio_root_en / 'English', 'English')
-    generate_wav(audio_root / 'Chinese', 'Chinese')
-    generate_wav(audio_root / 'Japanese', 'Japanese')
-    generate_wav(audio_root, 'sfx')
+    for config in configs:
+        generate_wav(config.audio_path, config.output_dir)
     
     config_file.unlink(missing_ok=True)
 
