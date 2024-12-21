@@ -4,7 +4,7 @@ namespace AutoUnpack {
 public static class Program {
 
     private static List<(string, string)> DynamicResourceToPngRules(List<string> rules) {
-        return rules.Select(rule => ("DynamicResource/" + rule, "PM/Content/PaperMan/UI/Atlas")).ToList();
+        return rules.Select(rule => ("PM/Content/PaperMan/UI/Atlas/DynamicResource/" + rule, "PM/Content/PaperMan/UI/Atlas")).ToList();
     }
     
     private static void DumpData(string providerRoot, string exportRoot, string jsonRoot,
