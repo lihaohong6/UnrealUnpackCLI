@@ -18,10 +18,10 @@ class AudioConfig:
 
 def get_configs(root: Path, root_gl: Path):
     return [
-        AudioConfig(root / 'Chinese', 'cn_banks.xml', 'Chinese'),
-        AudioConfig(root / 'Japanese', 'ja_bank.xml', 'Japanese'),
+        AudioConfig(root_gl / 'Chinese', 'cn_banks.xml', 'Chinese'),
+        AudioConfig(root_gl / 'Japanese', 'ja_bank.xml', 'Japanese'),
         AudioConfig(root_gl / 'English', 'en_banks.xml', 'English'),
-        AudioConfig(root, 'sfx_banks.xml', 'sfx')
+        AudioConfig(root_gl, 'sfx_banks.xml', 'sfx')
     ]
 
 

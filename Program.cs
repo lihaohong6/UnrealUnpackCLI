@@ -48,7 +48,8 @@ public static class Program {
             "Decal",
             "IdCard",
             "Map/Introduce",
-            "Map/Mini2D"
+            "Map/Mini2D",
+            "BattlePass/Background"
         ];
         var pngRules = new List<(string, string)> {
             ("PM/Content/PaperMan/Environment/Textures/Maps/Apartment/BP-AVG-CG",
@@ -81,7 +82,7 @@ public static class Program {
             ("PM/Content/WwiseAssets/AkEvent", "PM/Content")
         };
         var audioRules = new List<(string, string)> {
-            ("PM/Content/WwiseAudio/Windows/English", "PM/Content")
+            ("PM/Content/WwiseAudio/Windows", "PM/Content")
         };
         var pngRules = GetPngRules();
         DumpData(providerRoot, exportRoot, jsonRoot, jsonRules, pngRules, audioRules);
