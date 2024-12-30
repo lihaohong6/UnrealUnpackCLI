@@ -25,18 +25,17 @@ def get_configs(root: Path, root_gl: Path):
     ]
 
 
-def audio_convert(source: Path, dest: Path):
-    # this relpath step is necessary because cygwin has some odd admission control on /cygdrive/d
-    # using the absolute path would get us into a permission error when trying to write
-    dest = Path(os.path.relpath(str(dest), "."))
+def txtp_to_wav(source: Path, dest: Path):
+    
     dest.mkdir(exist_ok=True, parents=True)
     for file in source.rglob("*.txtp"):
         file_name = file.name
         out_path = dest.joinpath(file_name.replace(".txtp", ".wav"))
-        if not out_path.exists():
-            subprocess.call(["vgmstream-cli", file, "-o", out_path],
-                            stdout=open(os.devnull, 'wb'),
-                            cwd=str(source.parent))
+        def func(txtp_file, output_path):
+            subprocess.run(["vgmstream-cli", txtp_file, "-o", output_path.absolute()],
+                             stdout=open(os.devnull, 'wb'),
+                             cwd=source.parent)
+        func(file, out_path)
 
 
 def make_bank_file(banks_dir, config):
@@ -54,23 +53,28 @@ def make_bank_file(banks_dir, config):
     out_file.rename(banks_dir / config.bank_file)
 
 
-def generate_wav(audio_dir, output_dir):
+def make_txtp_files(audio_dir, txtp):
+    wwiser_location = Path('wwiser/wwiser.pyz').absolute()
+    config_file = Path(
+        ''.join(random.choices(string.ascii_uppercase + string.digits, k=15)) + "wwconfig.txt").absolute()
+    with open(config_file, "w") as f:
+        f.write("-g -go ")
+        f.write(f'"txtp" ')
+        f.write(" ".join(f'"{str(p.relative_to(audio_dir))}"' for p in Path(audio_dir).glob('*.bnk')))
+    subprocess.run(['python', wwiser_location, config_file],
+                   cwd=audio_dir)
+    config_file.unlink()
+
+
+def generate_wav(audio_dir: Path, output_dir: Path):
     txtp = Path(audio_dir.absolute() / 'txtp')
 
     if txtp.exists():
         shutil.rmtree(txtp)
-    
-    wwiser_location = Path('wwiser/wwiser.pyz').absolute()
-    config_file = Path(''.join(random.choices(string.ascii_uppercase + string.digits, k=15)) + "wwconfig.txt").absolute()
-    with open(config_file, "w") as f:
-        f.write("-g -go ")
-        f.write(f'"{str(txtp)}" ')
-        f.write(" ".join(f'"{str(p)}"' for p in Path(".").glob('*.bnk')))
-    subprocess.run(['python', wwiser_location, config_file],
-                    cwd=audio_dir)
-    config_file.unlink()
-    
-    audio_convert(txtp, output_dir)
+
+    make_txtp_files(audio_dir, txtp)
+
+    txtp_to_wav(txtp, output_dir)
 
 
 def main():
@@ -102,11 +106,13 @@ def main():
     for config in configs:
         dir_name = config.output_dir
         shutil.rmtree(dir_name, ignore_errors=True)
-        Path(dir_name).mkdir(exist_ok=True)
+        Path(dir_name).mkdir()
 
     # Generate WAV files
-    for config in configs:
-        generate_wav(config.audio_path, config.output_dir)
+    with concurrent.futures.ProcessPoolExecutor() as executor:
+        for config in configs:
+            executor.submit(generate_wav, 
+                            config.audio_path, Path(config.output_dir))
 
 
 if __name__ == "__main__":
