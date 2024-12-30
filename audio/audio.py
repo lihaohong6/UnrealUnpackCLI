@@ -1,12 +1,12 @@
-﻿import os
+﻿import concurrent.futures
+import os
+import random
 import shutil
+import string
 import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from sys import argv
-
-config_file = Path("wwconfig.txt")
 
 
 @dataclass
@@ -39,23 +39,41 @@ def audio_convert(source: Path, dest: Path):
                             cwd=str(source.parent))
 
 
-def main():
-    def generate_wav(audio_dir, output_dir):
-        current_dir = Path.cwd()
-        os.chdir(audio_dir)
-        txtp = Path('txtp')
+def make_bank_file(banks_dir, config):
+    out_string = " ".join(f'"{str(p)}"' for p in config.audio_path.glob('*.bnk'))
+    if out_string == "":
+        return
+    out_file = Path(config.bank_file)
+    out_string += f' --output={config.bank_file.replace(".xml", "")}'
+    config_file = Path(f"wwconfig{config.bank_file}.txt")
+    with open(config_file, "w") as f:
+        f.write(out_string)
+    subprocess.run(['python', 'wwiser/wwiser.pyz', config_file])
+    config_file.unlink()
     
-        if txtp.exists():
-            shutil.rmtree(txtp)
+    out_file.rename(banks_dir / config.bank_file)
 
-        with open(config_file, "w") as f:
-            f.write("-g -go ")
-            f.write(f'"{str(txtp)}" ')
-            f.write(" ".join(f'"{str(p)}"' for p in Path(".").glob('*.bnk')))
-        subprocess.run(['python', current_dir / 'wwiser/wwiser.pyz', config_file])
-        config_file.unlink()
-        audio_convert(txtp, current_dir / output_dir)
-        os.chdir(current_dir)
+
+def generate_wav(audio_dir, output_dir):
+    txtp = Path(audio_dir.absolute() / 'txtp')
+
+    if txtp.exists():
+        shutil.rmtree(txtp)
+    
+    wwiser_location = Path('wwiser/wwiser.pyz').absolute()
+    config_file = Path(''.join(random.choices(string.ascii_uppercase + string.digits, k=15)) + "wwconfig.txt").absolute()
+    with open(config_file, "w") as f:
+        f.write("-g -go ")
+        f.write(f'"{str(txtp)}" ')
+        f.write(" ".join(f'"{str(p)}"' for p in Path(".").glob('*.bnk')))
+    subprocess.run(['python', wwiser_location, config_file],
+                    cwd=audio_dir)
+    config_file.unlink()
+    
+    audio_convert(txtp, output_dir)
+
+
+def main():
 
     # Set paths
     if len(sys.argv) > 1:
@@ -75,14 +93,10 @@ def main():
     configs = get_configs(audio_root, audio_root_en)
     
     # Process bnk files
-    for config in configs:
-        out_string = " ".join(f'"{str(p)}"' for p in config.audio_path.glob('*.bnk'))
-        if out_string == "":
-            continue
-        with open(config_file, "w") as f:
-            f.write(out_string)
-        subprocess.run(['python', 'wwiser/wwiser.pyz', config_file])
-        Path('banks.xml').rename(banks_dir / config.bank_file)
+    with concurrent.futures.ProcessPoolExecutor() as executor:
+        for config in configs:
+            executor.submit(make_bank_file, 
+                            banks_dir, config)
 
     # Reset output directories
     for config in configs:
@@ -93,8 +107,6 @@ def main():
     # Generate WAV files
     for config in configs:
         generate_wav(config.audio_path, config.output_dir)
-    
-    config_file.unlink(missing_ok=True)
 
 
 if __name__ == "__main__":
