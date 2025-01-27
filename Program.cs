@@ -56,6 +56,8 @@ public static class Program {
                 "PM/Content/PaperMan/Environment/Textures/Maps"),
             ("PM/Content/PaperMan/Environment/Textures/Maps/Apartment/Pledge",
                 "PM/Content/PaperMan/Environment/Textures/Maps"),
+            ("PM/Content/PaperMan/Environment/Textures/Maps/Apartment/Background",
+                "PM/Content/PaperMan/Environment/Textures/Maps"),
         };
         pngRules.AddRange(DynamicResourceToPngRules(dynamicResources));
         return pngRules;
@@ -115,10 +117,8 @@ public static class Program {
         }
     }
 
-    private static void Other() {
-        var provider = Utilities.GetProvider("D:/Games/Strinova/Game");
-        var unpacker = new Unpacker(provider);
-        unpacker.ProcessJson("D:/Strinova/Strinova-data/Global", "PM/Content/WwiseAssets/AkEvent/Vox_Huixing_Cry.uasset", "PM/Content");
+    private static void Other(string providerRoot, string exportRoot) {
+        Playground.Test(providerRoot, exportRoot);
     }
 
     class Options {
@@ -165,7 +165,8 @@ public static class Program {
                 break;
             }
             case "Other": {
-                Other();
+                Other("D:/Games/Strinova/Game",
+                    "D:/Strinova/AutoUnpack/GLExport");
                 break;
             }
             default: {
