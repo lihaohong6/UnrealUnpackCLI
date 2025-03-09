@@ -40,6 +40,7 @@ public static class Program {
             "Item/BigIcon",
             "Emote",
             "Weapon/InGameGrowth",
+            "Weapon/WeaponIconWhite",
             "Achievement",
             "Skill",
             "Store",
@@ -51,13 +52,20 @@ public static class Program {
             "Map/Mini2D",
             "BattlePass/Background"
         ];
+        const string 
+            APARTMENT_ROOT = "PM/Content/PaperMan/Environment/Textures/Maps/Apartment/", 
+            APARTMENT_TRUNCATION = "PM/Content/PaperMan/Environment/Textures/Maps";
         var pngRules = new List<(string, string)> {
-            ("PM/Content/PaperMan/Environment/Textures/Maps/Apartment/BP-AVG-CG",
-                "PM/Content/PaperMan/Environment/Textures/Maps"),
-            ("PM/Content/PaperMan/Environment/Textures/Maps/Apartment/Pledge",
-                "PM/Content/PaperMan/Environment/Textures/Maps"),
-            ("PM/Content/PaperMan/Environment/Textures/Maps/Apartment/Background",
-                "PM/Content/PaperMan/Environment/Textures/Maps"),
+            (APARTMENT_ROOT + "BP-AVG-CG",
+                APARTMENT_TRUNCATION),
+            (APARTMENT_ROOT + "BP-AVG-BJ",
+                APARTMENT_TRUNCATION),
+            (APARTMENT_ROOT + "Pledge",
+                APARTMENT_TRUNCATION),
+            (APARTMENT_ROOT + "Background",
+                APARTMENT_TRUNCATION),
+            ("PM/Content/PaperMan/UI/Atlas/PC/Frontend/Activities/MidAutumnPC/NotPack",
+                "PM/Content/PaperMan/UI/Atlas/PC")
         };
         pngRules.AddRange(DynamicResourceToPngRules(dynamicResources));
         return pngRules;
@@ -150,6 +158,12 @@ public static class Program {
         switch (args[0]) {
             case "CN": {
                 DumpChineseData("""D:\Games\CalabiYau\CalabiyauGame""",
+                    "D:/Strinova/AutoUnpack/CNExport",
+                    "D:/Strinova/Strinova-data/CN");
+                break;
+            }
+            case "CN-beta": {
+                DumpChineseData("""D:\Games\Beta\CalabiYau\CalabiYau\CalabiyauGame""",
                     "D:/Strinova/AutoUnpack/CNExport",
                     "D:/Strinova/Strinova-data/CN");
                 break;
