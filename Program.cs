@@ -174,6 +174,12 @@ public static class Program {
                     "D:/Strinova/Strinova-data/Global");
                 break;
             }
+            case "GL-beta": {
+                DumpGlobalData("D:/Games/Beta/Strinova_TestServer/Strinova/Game",
+                    "D:/Strinova/AutoUnpack/GLExport",
+                    "D:/Strinova/Strinova-data/Global");
+                break;
+            }
             case "DumpAll": {
                 DumpAllJson("""D:\Games\CalabiYau\CalabiyauGame""");
                 break;
