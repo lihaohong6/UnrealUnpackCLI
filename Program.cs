@@ -51,7 +51,8 @@ public static class Program {
             "Map/Introduce",
             "Map/Mini2D",
             "BattlePass/Background",
-            "RoguelikeCard"
+            "RoguelikeCard",
+            "Talent"
         ];
         const string 
             APARTMENT_ROOT = "PM/Content/PaperMan/Environment/Textures/Maps/Apartment/", 
