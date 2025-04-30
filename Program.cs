@@ -1,4 +1,5 @@
 ﻿using CommandLine;
+using CUE4Parse.Compression;
 
 namespace AutoUnpack {
 public static class Program {
@@ -156,6 +157,9 @@ public static class Program {
             Console.WriteLine("Need a command");
             return;
         }
+
+        ZlibHelper.DownloadDll();
+        ZlibHelper.Initialize(ZlibHelper.DLL_NAME);
 
         switch (args[0]) {
             case "CN": {

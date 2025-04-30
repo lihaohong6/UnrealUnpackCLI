@@ -9,7 +9,7 @@ namespace AutoUnpack;
 public class Playground {
     public static void Test(string providerRoot, string exportRoot) {
         var provider = Utilities.GetProvider(providerRoot);
-        var objects = provider.LoadAllObjects("PM/Content/PaperMan/SkinAssets/Characters/MoBai/S001/Mesh3D/MoBai_Mesh");
+        var objects = provider.LoadPackage("PM/Content/PaperMan/SkinAssets/Characters/MoBai/S001/Mesh3D/MoBai_Mesh").GetExports();
         foreach (var obj in objects) {
             switch (obj) {
                 case UMorphTarget morphTarget: {

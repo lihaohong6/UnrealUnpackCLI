@@ -46,7 +46,7 @@ public class Unpacker(DefaultFileProvider provider, bool multithreaded = true) {
 
     public void ProcessPng(string exportRoot, string f, string truncate) {
         var path = f.Split(".")[0];
-        var objects = provider.LoadAllObjects(path);
+        var objects = provider.LoadPackage(path).GetExports();
         foreach (var obj in objects) {
             switch (obj) {
                 case UTexture2D texture: {
@@ -92,20 +92,21 @@ public class Unpacker(DefaultFileProvider provider, bool multithreaded = true) {
         string path = fullPath.Split(".")[0];
         if (fullPath.EndsWith(".uasset") || fullPath.EndsWith(".uexp")) {
             try {
-                if (provider.TryLoadObject(path, out var uObject)) {
+                if (provider.TryLoadPackageObject(path, out var uObject)) {
                     fullJson = JsonConvert.SerializeObject(uObject, Formatting.Indented);
                 }
                 else {
-                    var allObjects = provider.LoadAllObjects(path);
+                    var allObjects = provider.LoadPackage(path).GetExports();
                     var lst = allObjects.ToList();
                     fullJson = lst.Count == 1 ? 
                         JsonConvert.SerializeObject(lst.First(), Formatting.Indented) : 
-                        JsonConvert.SerializeObject(allObjects, Formatting.Indented);
+                        JsonConvert.SerializeObject(lst, Formatting.Indented);
                 }
             }
-            catch (Exception) {
+            catch (Exception e) {
                 // ignored
                 Console.WriteLine("Failed for " + path);
+                Console.WriteLine(e);
                 return;
             }
         }
