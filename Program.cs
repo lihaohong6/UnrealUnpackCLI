@@ -94,7 +94,7 @@ public static class Program {
             ("PM/Content/WwiseAssets/AkEvent", "PM/Content")
         };
         var audioRules = new List<(string, string)> {
-            ("PM/Content/WwiseAudio/Windows", "PM/Content")
+            ("PM/Content/WwiseAudio", "PM/Content")
         };
         var pngRules = GetPngRules();
         DumpData(providerRoot, exportRoot, jsonRoot, jsonRules, pngRules, audioRules);
