@@ -50,10 +50,12 @@ public static class Program {
             "Decal",
             "IdCard",
             "Map/Introduce",
-            "Map/Mini2D",
+            "Map/Mini2D/",
             "BattlePass/Background",
             "RoguelikeCard",
-            "Talent"
+            "Talent",
+            "GuideScreen",
+            "ChatBubbles"
         ];
         const string 
             APARTMENT_ROOT = "PM/Content/PaperMan/Environment/Textures/Maps/Apartment/", 
