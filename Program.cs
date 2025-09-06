@@ -154,6 +154,25 @@ public static class Program {
         public required IEnumerable<string> Exports { get; set; }
     }
 
+    private static string[] args;
+    private static int index;
+
+    private class ArgParse(string[] args) {
+        private int _index = 0;
+
+        public string NextArg(string defaultValue) {
+            _index++;
+            return args.Length > _index ? args[_index] : defaultValue;
+        }
+    }
+
+    private static string GetArg(string defaultValue) {
+        if (args.Length <= index) {
+            return defaultValue;
+        }
+        return args[index];
+    }
+
     public static void Main(string[] args) {
         if (args.Length == 0) {
             Console.WriteLine("Need a command");
@@ -162,12 +181,13 @@ public static class Program {
 
         ZlibHelper.DownloadDll();
         ZlibHelper.Initialize(ZlibHelper.DLL_NAME);
-
+        var p = new ArgParse(args);
         switch (args[0]) {
             case "CN": {
-                DumpChineseData("""D:\Games\CalabiYau\CalabiyauGame""",
-                    "D:/Strinova/AutoUnpack/CNExport",
-                    "D:/Strinova/Strinova-data/CN");
+                DumpChineseData(
+                    p.NextArg("""D:\Games\CalabiYau\CalabiyauGame"""),
+                    p.NextArg("D:/Strinova/AutoUnpack/CNExport"),
+                    p.NextArg("D:/Strinova/Strinova-data/CN"));
                 break;
             }
             case "CN-beta": {
@@ -177,9 +197,10 @@ public static class Program {
                 break;
             }
             case "GL": {
-                DumpGlobalData("D:/Games/Strinova/Game",
-                    "D:/Strinova/AutoUnpack/GLExport",
-                    "D:/Strinova/Strinova-data/Global");
+                DumpGlobalData(
+                    p.NextArg("D:/Games/Strinova/Game"),
+                    p.NextArg("D:/Strinova/AutoUnpack/GLExport"),
+                    p.NextArg("D:/Strinova/Strinova-data/Global"));
                 break;
             }
             case "GL-beta": {
