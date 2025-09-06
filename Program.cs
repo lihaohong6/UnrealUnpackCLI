@@ -188,6 +188,12 @@ public static class Program {
                     "D:/Strinova/Strinova-data/Global");
                 break;
             }
+            case "Android": {
+                DumpChineseData("D:/Strinova/Android",
+                    "D:/Strinova/AutoUnpack/AndroidExport",
+                    "D:/Strinova/Strinova-data/Android");
+                break;
+            }
             case "DumpAll": {
                 DumpAllJson("""D:\Games\CalabiYau\CalabiyauGame""");
                 break;

@@ -2,6 +2,7 @@
 .vscode/
 CNExport/
 GLExport/
+AndroidExport/
 audio/*/
 !audio/wwiser
 audio/wwiser/*
