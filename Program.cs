@@ -55,7 +55,10 @@ public static class Program {
             "RoguelikeCard",
             "Talent",
             "GuideScreen",
-            "ChatBubbles"
+            "ChatBubbles",
+            "UGCIcon",
+            "ZombieTalent/Main",
+            "ZombieTalent/Sub"
         ];
         const string 
             APARTMENT_ROOT = "PM/Content/PaperMan/Environment/Textures/Maps/Apartment/", 
